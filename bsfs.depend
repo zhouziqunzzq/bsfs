@@ -1,0 +1,20 @@
+# depslib dependency file v1.0
+1530528161 source:/home/harry/Documents/programming/cpp/bsfs/main.cpp
+	<iostream>
+	<cstring>
+	"VHDController.h"
+	"BSFSParams.h"
+
+1530528447 /home/harry/Documents/programming/cpp/bsfs/include/VHDController.h
+	<string>
+	<fstream>
+	"BSFSParams.h"
+
+1530528431 source:/home/harry/Documents/programming/cpp/bsfs/src/VHDController.cpp
+	"VHDController.h"
+	"BSFSParams.h"
+	<fstream>
+	<cstring>
+
+1530526694 /home/harry/Documents/programming/cpp/bsfs/include/BSFSParams.h
+

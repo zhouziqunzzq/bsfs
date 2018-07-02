@@ -1,0 +1,11 @@
+#ifndef BSFSPARAMS_H_INCLUDED
+#define BSFSPARAMS_H_INCLUDED
+
+// VHD
+#define VHDSIZE 1024*1024*64    // 64MB
+#define VHDFILENAME "data.img"
+// Block
+#define BLOCKSIZE 1024*1    // 1KB
+#define BLOCKNUM (VHDSIZE) / (BLOCKSIZE)
+
+#endif // BSFSPARAMS_H_INCLUDED
