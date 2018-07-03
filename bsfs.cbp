@@ -13,6 +13,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-g" />
+					<Add directory="include" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -22,6 +23,7 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add directory="include" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -37,9 +39,15 @@
 			<Add directory="include" />
 		</Linker>
 		<Unit filename="include/BSFSParams.h" />
+		<Unit filename="include/FSController.h" />
+		<Unit filename="include/MBR.h" />
+		<Unit filename="include/SuperBlock.h" />
 		<Unit filename="include/VHDController.h" />
+		<Unit filename="include/test.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="src/FSController.cpp" />
 		<Unit filename="src/VHDController.cpp" />
+		<Unit filename="src/test.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
