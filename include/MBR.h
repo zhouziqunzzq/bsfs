@@ -6,7 +6,7 @@
 
 using namespace std;
 
-struct MBR
+struct MBR  // sizeof(MBR) = BLOCKSIZE
 {
     bool formatFlag;
     char welcomeMsg[BLOCKSIZE - 1];

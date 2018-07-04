@@ -6,7 +6,7 @@
 
 using namespace std;
 
-struct SuperBlock
+struct SuperBlock   // sizeof(SuperBlock) = BLOCKSIZE
 {
     int cnt;    // Free blocks in the group, also used for stack top pointer
     int freeStack[GROUPSIZE];   // Free blocks stack

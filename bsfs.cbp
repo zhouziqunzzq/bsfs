@@ -41,8 +41,10 @@
 		<Unit filename="include/BSFSParams.h" />
 		<Unit filename="include/FSController.h" />
 		<Unit filename="include/MBR.h" />
+		<Unit filename="include/SFD.h" />
 		<Unit filename="include/SuperBlock.h" />
 		<Unit filename="include/VHDController.h" />
+		<Unit filename="include/iNode.h" />
 		<Unit filename="include/test.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="src/FSController.cpp" />
