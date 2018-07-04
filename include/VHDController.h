@@ -32,7 +32,8 @@ public:
     bool Create();    // Init a Virtual HD file with given filename and size
     bool Exists();  // Check the existence of VHD file
     bool Load();    // Load VHD file
-    bool ReadBlock(int blockID, char *buffer);  // Read one block to buffer
+    bool ReadBlock(int blockID, char *buffer,
+                   int len = BLOCKSIZE);  // Read one block to buffer
     bool WriteBlock(int blockID, char *buffer,
                     int len = BLOCKSIZE);    // Write one block from buffer
 

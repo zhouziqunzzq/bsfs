@@ -47,12 +47,12 @@ bool VHDController::Load()
     return this->_file.good();
 }
 
-bool VHDController::ReadBlock(int blockID, char *buffer)
+bool VHDController::ReadBlock(int blockID, char *buffer, int len)
 {
-    if (blockID < BLOCKNUM)
+    if (blockID < BLOCKNUM && len <= BLOCKSIZE)
     {
         this->_file.seekg(blockID * BLOCKSIZE);
-        this->_file.read(buffer, BLOCKSIZE);
+        this->_file.read(buffer, len);
         if (!this->_file)
             return false;
         else
