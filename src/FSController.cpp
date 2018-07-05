@@ -42,7 +42,7 @@ bool FSController::Format()
 bool FSController::IsFormat()
 {
     MBR mbr;
-    return this->vhdc.ReadBlock(0, (char*)&mbr) && mbr.formatFlag;
+    return this->vhdc.ReadBlock(MBRBLOCK, (char*)&mbr) && mbr.formatFlag;
 }
 
 bool FSController::GetBIDByFOff(const iNode& cur, int foff, int* rst)
@@ -50,20 +50,54 @@ bool FSController::GetBIDByFOff(const iNode& cur, int foff, int* rst)
     int startBlock = foff / BLOCKSIZE;
     if (startBlock <= INODE_DIRECT_MAX)
         *rst = cur.data[startBlock];
-    else if (startBlock <= (INODE_DIRECT_MAX + BLOCKSIZE / sizeof(int)))
+    else if (startBlock <= (int)(INODE_DIRECT_MAX + BLOCKSIZE / sizeof(int)))
     {
-        char buf[BLOCKSIZE];
-        if(!vhdc.ReadBlock(cur.data[INODE_1INDIR_MAX], buf, BLOCKSIZE))
+        char indir1[BLOCKSIZE];
+        if(!vhdc.ReadBlock(cur.data[INODE_INDIR1_MAX], indir1, BLOCKSIZE))
             return false;
+        char* toffset = indir1 + (startBlock - DIRECT_BLOCK_CNT) * sizeof(int);
+        memcpy(rst, toffset, sizeof(int));
     }
     else
-    {}
+    {
+        // Find level one indirect index block
+        char indir1[BLOCKSIZE];
+        if(!vhdc.ReadBlock(cur.data[INODE_INDIR2_MAX], indir1, BLOCKSIZE))
+            return false;
+        int offInIndir2 = (startBlock - DIRECT_BLOCK_CNT - INDIR1_BLOCK_CNT) /
+            (BLOCKSIZE / sizeof(int));
+        char* toffset = indir1 + offInIndir2 * sizeof(int);
+        int indir2ID;
+        memcpy(&indir2ID, toffset, sizeof(int));
+        // Find level two indirect index block
+        char indir2[BLOCKSIZE];
+        if(!vhdc.ReadBlock(indir2ID, indir2, BLOCKSIZE))
+            return false;
+        toffset = indir2 + ((startBlock - DIRECT_BLOCK_CNT - INDIR1_BLOCK_CNT) %
+                            (BLOCKSIZE / sizeof(int))) * sizeof(int);
+        memcpy(rst, toffset, sizeof(int));
+    }
     return true;
 }
 
 bool FSController::ReadFileToBuf(const iNode& cur, int start, int len, char* buf)
 {
-    if (start > cur.size - 1 || start + len - 1 > cur.size - 1)
+    if (start > (int)cur.size - 1 || start + len - 1 > (int)cur.size - 1)
         return false;
+    char* tbuf = new char[len + 2 * BLOCKSIZE];
+    int filep = start;  // File reader pointer
+    char* bufp = tbuf;   // Buffer writer pointer
+    int tBID;
+    while (filep < start + len + BLOCKSIZE - (start + len) % BLOCKSIZE)
+    {
+        if (!GetBIDByFOff(cur, filep, &tBID)) return false;
+        if (!this->vhdc.ReadBlock(tBID, bufp, BLOCKSIZE)) return false;
+        filep += BLOCKSIZE;
+        bufp += BLOCKSIZE;
+    }
+    char* s = tbuf + (start % BLOCKSIZE);
+    //char* e = tbuf + start % BLOCKSIZE + len;
+    memcpy(buf, s, len);
+    delete[] tbuf;
     return true;
 }

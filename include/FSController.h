@@ -15,11 +15,12 @@ class FSController
         bool IsFormat();
         bool GetBIDByFOff(const iNode& cur, int foff, int* rst);
         bool ReadFileToBuf(const iNode& cur, int start, int len, char* buf);
+        VHDController& vhdc;
 
     protected:
 
     private:
-        VHDController& vhdc;
+
         FBController fbc;
         FBController ifbc;
 };
