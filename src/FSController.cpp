@@ -204,7 +204,7 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
                     newpath[newlen++] = path[i];
                     if(i == pp)
                     {
-                        for(int j = 0;  j < tmpiNode.size; j++)
+                        for(int j = 0;  j < (int)tmpiNode.size; j++)
                             newpath[newlen++] = synlink[j];
                         newpath[newlen++] = '/';
                     }
@@ -214,7 +214,7 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
                 delete[] newpath;
                 continue;
             }
-            memcpy(nowiNode, tmpiNode, sizeof(iNode));
+            memcpy((char*)&nowiNode, (char*)&tmpiNode, sizeof(iNode));
         }
         else return false;
     }
