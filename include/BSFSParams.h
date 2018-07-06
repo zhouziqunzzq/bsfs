@@ -10,7 +10,8 @@
 #define MBRBLOCK 0
 #define SUPERBLOCK 1
 #define iSUPERBLOCK 2
-#define iNODEBLOCK_MIN 3
+#define ROOTDIRiNODE 3
+#define iNODEBLOCK_MIN 4
 #define iNODEBLOCK_MAX 1026
 #define DATABLOCK_MIN 1027
 #define DATABLOCK_MAX BLOCKNUM - 1
@@ -30,8 +31,12 @@
 #define ROOT_INODE iNODEBLOCK_MIN
 // SFD
 #define FILENAME_MAXLEN 30
+// File Mode
+#define DIRFLAG 1<<7
+#define SYNLINKFLAG 1
 // Other
 #define WELCOMEMSG "Booting BSFS..."
+#define MAXFOLLOWLINK 40
 
 #endif // BSFSPARAMS_H_INCLUDED
 
