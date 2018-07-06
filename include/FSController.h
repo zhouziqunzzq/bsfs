@@ -13,6 +13,8 @@ class FSController
     public:
         FSController(VHDController& _vhdc);
         VHDController& vhdc;
+        FBController fbc;
+        FBController ifbc;
         bool Format();
         bool IsFormat();
         bool GetBIDByFOff(const iNode& cur, int foff, int* rst);
@@ -22,10 +24,10 @@ class FSController
         bool ParsePath(const iNode& curDir, char* path, bool last, iNode* rst);
 
     protected:
+        //
 
     private:
-        FBController fbc;
-        FBController ifbc;
+        //
 };
 
 #endif // FSCONTROLLER_H

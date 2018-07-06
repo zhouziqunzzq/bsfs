@@ -24,9 +24,21 @@ bool FBController::LoadSuperBLock()
                                 (char*)&this->superblock, sizeof(SuperBlock));
 }
 
+bool FBController::LoadSuperBLock(int blockID)
+{
+    return this->vhdc.ReadBlock(blockID,
+                                (char*)&this->superblock, sizeof(SuperBlock));
+}
+
 bool FBController::SaveSuperBlock()
 {
     return this->vhdc.WriteBlock(this->superblockID,
+                                 (char*)&this->superblock, sizeof(SuperBlock));
+}
+
+bool FBController::SaveSuperBlock(int blockID)
+{
+    return this->vhdc.WriteBlock(blockID,
                                  (char*)&this->superblock, sizeof(SuperBlock));
 }
 
@@ -34,7 +46,7 @@ bool FBController::Recycle(int blockID)
 {
     if (this->superblock.cnt == GROUPSIZE)
     {
-        if(!this->vhdc.WriteBlock(blockID, (char*)&this->superblock, sizeof(SuperBlock)))
+        if(!this->SaveSuperBlock(blockID))
             return false;
         memset((char*)&this->superblock, 0, sizeof(SuperBlock));
         this->superblock.cnt = 1;
@@ -50,8 +62,9 @@ bool FBController::Distribute(int* blockID)
     *blockID = this->superblock.freeStack[this->superblock.cnt-1];
     if(this->superblock.cnt == 1)
     {
-        if(!this->vhdc.ReadBlock(*blockID, (char*)&this->superblock, sizeof(SuperBlock)))
+        if(!this->LoadSuperBLock(*blockID))
             return false;
     }
+    else this->superblock.cnt--;
     return true;
 }

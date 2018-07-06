@@ -12,7 +12,9 @@ class FBController
         FBController(VHDController& _vhdc, int _sbID, int _minbID, int _maxbID);
         ~FBController();
         bool LoadSuperBLock();
+        bool LoadSuperBLock(int blockID);
         bool SaveSuperBlock();
+        bool SaveSuperBlock(int blockID);
         bool Recycle(int blockID);
         bool Distribute(int* blockID);
 

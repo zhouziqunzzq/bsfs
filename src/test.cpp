@@ -10,6 +10,9 @@ using namespace std;
 
 void TestVHDController(VHDController& vhdc)
 {
+    cout << "================Test VHDController=================" << endl;
+    // Test VHD Create
+    cout << "================Test VHD Create=================" << endl;
     if (!vhdc.Exists())
     {
         cout << "Initializing VHD file " << vhdc.Getfilename() << "...";
@@ -24,7 +27,8 @@ void TestVHDController(VHDController& vhdc)
     else
         cout << "Error" << endl;
     // Test VHD R/W
-    /*char wbuff[BLOCKSIZE];
+    /*cout << "================Test VHD R/W=================" << endl;
+    char wbuff[BLOCKSIZE];
     memset(wbuff, 0, BLOCKSIZE);
     strcpy(wbuff, "Hello world");
     vhdc.WriteBlock(0, wbuff);
@@ -40,14 +44,48 @@ void TestVHDController(VHDController& vhdc)
 
 void TestFSController(FSController& fsc)
 {
+    cout << "================Test FSController=================" << endl;
+    // Test Format
+    cout << "================Test Format=================" << endl;
     if (fsc.IsFormat())
         cout << "Already formatted" << endl;
     else
-        fsc.Format();
+    {
+        if (!fsc.Format())
+            cout << "Format failed" << endl;
+        else
+            cout << "Format successful" << endl;
+    }
+
+    // Test GLP Distribute
+    cout << "================Test GLP Distribute=================" << endl;
+    int bid;
+    int blockCnt = 0;
+    while (fsc.fbc.Distribute(&bid))
+    {
+        //cout << "Block " << bid << " distributed" << endl;
+        blockCnt++;
+    }
+    cout << "Distributed block cnt: " << blockCnt << endl;
+    cout << "Distributed block cnt expected: " << DATABLOCK_MAX - DATABLOCK_MIN + 1 << endl;
+
+    // Test GLP Recycle
+    blockCnt = 0;
+    for (int i = DATABLOCK_MIN; i <= DATABLOCK_MAX; i++)
+    {
+        if (fsc.fbc.Recycle(i))
+        {
+            //cout << "Block " << i << " recycled" << endl;
+            blockCnt++;
+        }
+    }
+    cout << "Recycled block cnt: " << blockCnt << endl;
+    cout << "Recycled block cnt expected: " << DATABLOCK_MAX - DATABLOCK_MIN + 1 << endl;
 }
 
 void TestGetBIDByFOff(FSController& fsc)
 {
+    cout << "================Test GetBIDByFOff=================" << endl;
     bool flag = true;
     // Create iNode
     iNode testiNode;
@@ -100,6 +138,7 @@ void TestGetBIDByFOff(FSController& fsc)
 
 void TestReadFileToBuf(FSController& fsc)
 {
+    cout << "================Test ReadFileToBuf=================" << endl;
     // Create iNode
     iNode testiNode;
     testiNode.size = 1024*3;

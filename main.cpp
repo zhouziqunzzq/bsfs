@@ -14,7 +14,7 @@ int main()
 
     FSController fsc(vhdc);
     TestFSController(fsc);
-    //TestGetBIDByFOff(fsc);
+    TestGetBIDByFOff(fsc);
     TestReadFileToBuf(fsc);
 
     return 0;
