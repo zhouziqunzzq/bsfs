@@ -3,6 +3,7 @@
 #include "BSFSParams.h"
 #include "MBR.h"
 #include "iNode.h"
+#include "SFD.h"
 #include <cstring>
 #include <iostream>
 
@@ -99,5 +100,125 @@ bool FSController::ReadFileToBuf(const iNode& cur, int start, int len, char* buf
     //char* e = tbuf + start % BLOCKSIZE + len;
     memcpy(buf, s, len);
     delete[] tbuf;
+    return true;
+}
+
+bool FSController::GetContentInDir(const iNode& curDir, SFD* rst)
+{
+    if(!ReadFileToBuf(curDir, 0, curDir.size, (char*)rst))
+        return false;
+    return true;
+}
+
+bool FSController::FindContentInDir(const SFD* DirSet, const int len, char* name, int* rst)
+{
+    for(int i = 0; i < len; i++)
+    {
+        if(strcmp(DirSet[i].name, name) == 0)
+        {
+            *rst = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+// curDir: current directory
+// path: path to parse
+// last: whether parse to the last level of path or not
+bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* rst)
+{
+    iNode nowiNode, tmpiNode;
+    int pp = 0, totLinkCnt = 0;
+    if(path[0] == '/')
+    {
+        if(!vhdc.ReadBlock(ROOTDIRiNODE, (char*)&nowiNode, sizeof(iNode)))
+            return false;
+        pp++;
+    }
+    else memcpy((char*)&nowiNode, (char*)&curDir, sizeof(iNode));
+
+    char buf[FILENAME_MAXLEN + 10];
+    int bufp, target;
+    while(true)
+    {
+        bufp = 0;
+        while(path[pp] == '/') pp++;
+        while(path[pp] != '/')
+        {
+            if(path[pp] == '\0') break;
+            buf[bufp]=path[pp];
+            bufp++;
+            pp++;
+        }
+
+        // Skip last level if last == false
+        if((!last) && (path[pp] == '\0')) break;
+
+        buf[bufp] = '\0';
+        if(bufp == 0) break;
+
+        int subDirnum = nowiNode.size / sizeof(SFD);
+        SFD* DirSet = new SFD[subDirnum];
+        if(!GetContentInDir(nowiNode, DirSet))
+        {
+            delete[] DirSet;
+            return false;
+        }
+        if(FindContentInDir(DirSet, subDirnum, buf, &target))
+        {
+            if(!vhdc.ReadBlock(DirSet[target].inode, (char*)&tmpiNode, sizeof(iNode)))
+            {
+                delete[] DirSet;
+                return false;
+            }
+            // If the last level of the path is a file -> true
+            // else -> false
+            if(!(tmpiNode.mode & DIRFLAG) && (pp != '\0'))
+                return false;
+            // Follow symbolic link
+            if(tmpiNode.mode & SYNLINKFLAG)
+            {
+                totLinkCnt++;
+                if(totLinkCnt > MAXFOLLOWLINK) return false;
+
+                char* synlink = new char[tmpiNode.size];
+                if(!ReadFileToBuf(tmpiNode, 0, tmpiNode.size, synlink))
+                {
+                    delete[] synlink;
+                    return false;
+                }
+                if(synlink[0] == '/')
+                {
+                    if(!vhdc.ReadBlock(ROOTDIRiNODE, (char*)&nowiNode, sizeof(iNode)))
+                    {
+                        delete[] synlink;
+                        return false;
+                    }
+                }
+                int len = strlen(path);
+                char* newpath = new char[len + tmpiNode.size + 10];
+                int newlen = 0;
+                for(int i = 0; i < len; i++)
+                {
+                    newpath[newlen++] = path[i];
+                    if(i == pp)
+                    {
+                        for(int j = 0;  j < tmpiNode.size; j++)
+                            newpath[newlen++] = synlink[j];
+                        newpath[newlen++] = '/';
+                    }
+                }
+                strcpy(path, newpath);
+                delete[] synlink;
+                delete[] newpath;
+                continue;
+            }
+            memcpy(nowiNode, tmpiNode, sizeof(iNode));
+        }
+        else return false;
+    }
+
+    memcpy((char*)rst, (char*)&nowiNode, sizeof(iNode));
     return true;
 }
