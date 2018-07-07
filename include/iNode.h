@@ -12,8 +12,8 @@ struct iNode    // sizeof(iNode) = 96
     bid_t bid;  // Block ID
     bid_t parent;  // parent iNode block ID
     char mode;  // d rwx(owner) rwx(public) softlink
-    unsigned int nlink; // hard link count
-    unsigned short uid; // user ID
+    unsigned int nlink; // hard link count (default: 1)
+    unsigned short uid; // owner user ID
     unsigned int size;  // file size in bytes
     time_t atime; // access timestamp
     time_t mtime; // modify timestamp

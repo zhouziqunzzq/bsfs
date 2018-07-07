@@ -16,6 +16,7 @@
 #define DATABLOCK_MIN 1027
 #define DATABLOCK_MAX BLOCKNUM - 1
 typedef unsigned int bid_t;
+typedef unsigned short ibid_t;
 // GLP(Grouped Linked Pointers)
 #define GROUPSIZE (BLOCKSIZE) / sizeof(bid_t) - 1
 // iNode
@@ -35,10 +36,22 @@ typedef unsigned int bid_t;
 #define FILENAME_MAXLEN 30
 // File Mode
 #define DIRFLAG 1<<7
+#define OWNER_RFLAG 1<<6
+#define OWNER_WFLAG 1<<5
+#define OWNER_XFLAG 1<<4
+#define PUBLIC_RFLAG 1<<3
+#define PUBLIC_WFLAG 1<<2
+#define PUBLIC_XFLAG 1<<1
 #define SYNLINKFLAG 1
+// User
+#define ROOT_UID 1
+#define MAX_UNAME_LEN 32
+// CLI
+#define MAX_CMD_LEN 1024
 // Other
 #define WELCOMEMSG "Booting BSFS..."
 #define MAXFOLLOWLINK 40
+#define HOSTNAME ""
 
 #endif // BSFSPARAMS_H_INCLUDED
 

@@ -37,7 +37,7 @@ bool FSController::Format()
 
     // Fomat iNode Super Block and construct GPL
     ifbc.SetFullFlag();
-    for(int i = iNODEBLOCK_MIN + 1; i <= iNODEBLOCK_MAX; i++)
+    for(int i = iNODEBLOCK_MIN + 1; i <= iNODEBLOCK_MAX; i++)   // skip iNode of /
         if(!ifbc.Recycle(i)) return false;
     if(!ifbc.SaveSuperBlock()) return false;
 
@@ -404,4 +404,68 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
 
     memcpy((char*)rst, (char*)&nowiNode, sizeof(iNode));
     return true;
+}
+
+bool FSController::InitDirSFDList(iNode& cur, ibid_t parentBid)
+{
+    SFD sfdList[2];
+    // Dot denode itself
+    strcpy(sfdList[0].name, ".");
+    sfdList[0].inode = cur.bid;
+    // Dot Dot denode its parent
+    strcpy(sfdList[1].name, "..");
+    sfdList[1].inode = parentBid;
+
+    return this->WriteFileFromBuf(cur, 0, sizeof(SFD) * 2, (char*)&sfdList);
+}
+
+bool FSController::CreateRootDir()
+{
+    // Create RootDir iNode
+    iNode rootiNode;
+    rootiNode.bid = ROOTDIRiNODE;
+    rootiNode.parent = ROOTDIRiNODE;
+    rootiNode.mode = DIRFLAG | OWNER_RFLAG | OWNER_WFLAG | OWNER_XFLAG | PUBLIC_RFLAG |
+        PUBLIC_XFLAG;
+    rootiNode.nlink = 1;
+    rootiNode.uid = ROOT_UID;
+    rootiNode.size = 0;
+    rootiNode.atime = rootiNode.mtime = time(nullptr);
+    rootiNode.blocks = 0;
+    rootiNode.bytes = 0;
+    if (!this->vhdc.WriteBlock(ROOT_INODE, (char*)&rootiNode, sizeof(iNode)))
+        return false;
+    // Create RootDir SFD List
+    if (!this->InitDirSFDList(rootiNode, ROOTDIRiNODE))
+        return false;
+    return true;
+}
+
+bool FSController::CreateSubDir(iNode& curDir, char* dirname, int ownerUid)
+{
+    SFD* dir = new SFD[curDir.size / sizeof(SFD) + 1];
+    if (!this->GetContentInDir(curDir, dir)) return false;
+    int rst;
+    // Check if dirname already exists
+    if (this->FindContentInDir(dir, curDir.size / sizeof(SFD), dirname, &rst))
+    {
+        delete[] dir;
+        return false;
+    }
+    // Create new iNode
+    bid_t rst;
+    if (!this->ifbc->Distribute(&rst)) return false;
+    iNode subDiriNode;
+    subDiriNode.bid = rst;
+    subDiriNode.parent = ROOTDIRiNODE;
+    subDiriNode.mode = DIRFLAG | OWNER_RFLAG | OWNER_WFLAG | OWNER_XFLAG | PUBLIC_RFLAG |
+        PUBLIC_XFLAG;
+    subDiriNode.nlink = 1;
+    subDiriNode.uid = ROOT_UID;
+    subDiriNode.size = 0;
+    subDiriNode.atime = rootiNode.mtime = time(nullptr);
+    subDiriNode.blocks = 0;
+    subDiriNode.bytes = 0;
+
+    delete[] dir;
 }
