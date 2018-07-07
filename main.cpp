@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <ctime>
 #include "test.h"
 #include "BSFSParams.h"
 #include "VHDController.h"
@@ -14,9 +15,10 @@ int main()
 
     FSController fsc(vhdc);
     TestFSController(fsc);
-    //TestGetBIDByFOff(fsc);
-    //TestReadFileToBuf(fsc);
-    //TestAppendBlocksToFile(fsc);
+    TestGetBIDByFOff(fsc);
+    TestReadFileToBuf(fsc);
+    TestAppendBlocksToFile(fsc);
+    TestWriteFileFromBuf(fsc);
 
     return 0;
 }

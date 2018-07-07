@@ -117,7 +117,7 @@ void TestGetBIDByFOff(FSController& fsc)
     flag &= fsc.vhdc.WriteBlock(77, buf5);
     flag &= fsc.vhdc.WriteBlock(88, buf6);
 
-    int rst = 0;
+    bid_t rst = 0;
     fsc.GetBIDByFOff(testiNode, 2, &rst);
     cout << rst << endl;
     fsc.GetBIDByFOff(testiNode, 5120, &rst);
@@ -192,7 +192,7 @@ void TestReadFileToBuf(FSController& fsc)
 
 void TestAppendBlocksToFile(FSController &fsc)
 {
-    cout << "================Test TestAppendBlocksToFile=================" << endl;
+    cout << "================Test AppendBlocksToFile=================" << endl;
     iNode testiNode;
     testiNode.size = 0;
     testiNode.blocks = 0;
@@ -207,7 +207,33 @@ void TestAppendBlocksToFile(FSController &fsc)
         cout << "Failed to append" << endl;
 
     cout << "testiNode.blocks: " << testiNode.blocks << endl;
-
     for (int i = 0; i < 12; i++)
+        cout << "testiNode.data[" << i << "]: " << testiNode.data[i] << endl;
+}
+
+void TestWriteFileFromBuf(FSController &fsc)
+{
+    cout << "================Test WriteFileFromBuf=================" << endl;
+    iNode testiNode;
+    testiNode.size = 0;
+    testiNode.blocks = 0;
+    testiNode.bytes = 0;
+    fsc.ifbc.Distribute(&testiNode.bid);
+    cout << "testiNode.bid: " << testiNode.bid << endl;
+    int i = 0;
+    char s[1024 * 270 + 10];
+    for (i = 0; i < 1024 * 270 + 1; i++)
+        s[i] = 'b';
+    s[i] = '\0';
+    if (fsc.WriteFileFromBuf(testiNode, 0, strlen(s), s))
+        cout << "Write successful" << endl;
+    else
+        cout << "Write failed" << endl;
+    cout << "testiNode.blocks: " << testiNode.blocks << endl;
+    cout << "testiNode.bytes: " << testiNode.bytes << endl;
+    cout << "testiNode.size: " << testiNode.size << endl;
+    cout << "testiNode.atime: " << testiNode.atime << endl;
+    cout << "testiNode.mtime: " << testiNode.mtime << endl;
+    for (i = 0; i < 12; i++)
         cout << "testiNode.data[" << i << "]: " << testiNode.data[i] << endl;
 }

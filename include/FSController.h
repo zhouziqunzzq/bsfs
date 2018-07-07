@@ -17,7 +17,7 @@ class FSController
         FBController ifbc;
         bool Format();
         bool IsFormat();
-        bool GetBIDByFOff(const iNode& cur, int foff, int* rst);
+        bool GetBIDByFOff(const iNode& cur, int foff, bid_t* rst);
         bool ReadFileToBuf(const iNode& cur, int start, int len, char* buf);
         bool AppendBlocksToFile(iNode& cur, int blockCnt);
         bool WriteFileFromBuf(iNode& cur, int start, int len, char* buf);

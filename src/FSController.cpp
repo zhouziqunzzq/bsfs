@@ -6,6 +6,8 @@
 #include "SFD.h"
 #include <cstring>
 #include <iostream>
+#include <cmath>
+#include <ctime>
 
 using namespace std;
 
@@ -48,18 +50,18 @@ bool FSController::IsFormat()
     return this->vhdc.ReadBlock(MBRBLOCK, (char*)&mbr) && mbr.formatFlag;
 }
 
-bool FSController::GetBIDByFOff(const iNode& cur, int foff, int* rst)
+bool FSController::GetBIDByFOff(const iNode& cur, int foff, bid_t* rst)
 {
     int startBlock = foff / BLOCKSIZE;
     if (startBlock <= INODE_DIRECT_MAX)
         *rst = cur.data[startBlock];
-    else if (startBlock <= (int)(INODE_DIRECT_MAX + BLOCKSIZE / sizeof(int)))
+    else if (startBlock <= (int)(INODE_DIRECT_MAX + BLOCKSIZE / sizeof(bid_t)))
     {
         char indir1[BLOCKSIZE];
         if(!vhdc.ReadBlock(cur.data[INODE_INDIR1_MAX], indir1, BLOCKSIZE))
             return false;
-        char* toffset = indir1 + (startBlock - DIRECT_BLOCK_CNT) * sizeof(int);
-        memcpy(rst, toffset, sizeof(int));
+        char* toffset = indir1 + (startBlock - DIRECT_BLOCK_CNT) * sizeof(bid_t);
+        memcpy(rst, toffset, sizeof(bid_t));
     }
     else
     {
@@ -78,7 +80,7 @@ bool FSController::GetBIDByFOff(const iNode& cur, int foff, int* rst)
             return false;
         toffset = indir2 + ((startBlock - DIRECT_BLOCK_CNT - INDIR1_BLOCK_CNT) %
                             (BLOCKSIZE / sizeof(int))) * sizeof(int);
-        memcpy(rst, toffset, sizeof(int));
+        memcpy(rst, toffset, sizeof(bid_t));
     }
     return true;
 }
@@ -90,7 +92,7 @@ bool FSController::ReadFileToBuf(const iNode& cur, int start, int len, char* buf
     char* tbuf = new char[len + 2 * BLOCKSIZE];
     int filep = start;  // File reader pointer
     char* bufp = tbuf;   // Buffer writer pointer
-    int tBID;
+    bid_t tBID;
     while (filep < start + len + BLOCKSIZE - (start + len) % BLOCKSIZE)
     {
         if (!GetBIDByFOff(cur, filep, &tBID)) return false;
@@ -212,7 +214,6 @@ bool FSController::AppendBlocksToFile(iNode& cur, int blockCnt)
             if (!this->vhdc.WriteBlock(indir1BufLoadBid, indir1Buf, BLOCKSIZE)) return false;
         }
     }
-    cout << "Updating iNode" << endl;
     // Update iNode
     cur.blocks += blockCnt;
     if (!this->vhdc.WriteBlock(cur.bid, (char*)&cur, sizeof(iNode))) return false;
@@ -222,11 +223,65 @@ bool FSController::AppendBlocksToFile(iNode& cur, int blockCnt)
 bool FSController::WriteFileFromBuf(iNode& cur, int start, int len, char* buf)
 {
     // Append new blocks if needed
-    /*if (start > (int)cur.size - 1 || start + len > (int)cur.size)
+    int deltaBlocks = ceil(((float)start + len) / (float)(BLOCKSIZE)) - cur.blocks;
+    if (deltaBlocks > 0)
     {
-        int dataBlockNeedCnt = (start + len - 1) / BLOCKSIZE + cur.blocks - 1;
-        //
-    }*/
+        if (!this->AppendBlocksToFile(cur, deltaBlocks)) return false;
+    }
+    // Write buf to file block by block
+    int startBlock = start / BLOCKSIZE;
+    int endBlock = (start + len) / BLOCKSIZE;
+    int nowBlock = startBlock;
+    char* bufp = buf;
+    bid_t curBID = 0;
+    int filep = start;
+    char rbuf[BLOCKSIZE];
+
+    if (startBlock == endBlock) // Write in one block
+    {
+        if (!GetBIDByFOff(cur, start, &curBID)) return false;
+        if (!this->vhdc.ReadBlock(curBID, rbuf, BLOCKSIZE)) return false;
+        memcpy(rbuf + start % BLOCKSIZE, buf, len);
+        if (!this->vhdc.WriteBlock(curBID, rbuf, BLOCKSIZE)) return false;
+    }
+    else    // Write in multiple blocks
+    {
+        while (filep < start + len + BLOCKSIZE - (start + len) % BLOCKSIZE)
+        {
+            if (!GetBIDByFOff(cur, filep, &curBID)) return false;
+            if (!this->vhdc.ReadBlock(curBID, rbuf, BLOCKSIZE)) return false;
+            if (nowBlock == startBlock) // First block
+            {
+                int toff = start % BLOCKSIZE;
+                int tlen = BLOCKSIZE - toff;
+                memcpy(rbuf + toff, bufp, tlen);
+                bufp += tlen;
+            }
+            else if (nowBlock == endBlock)  // Last block
+            {
+                int tlen = (start + len) % BLOCKSIZE;
+                memcpy(rbuf, bufp, tlen);
+                bufp += tlen;
+            }
+            else    // Middle block
+            {
+                memcpy(rbuf, bufp, BLOCKSIZE);
+                bufp += BLOCKSIZE;
+            }
+            if (!this->vhdc.WriteBlock(curBID, rbuf, BLOCKSIZE)) return false;
+            filep += BLOCKSIZE;
+            nowBlock++;
+        }
+    }
+    // Update iNode
+    cur.mtime = time(nullptr);
+    cur.atime = time(nullptr);
+    if (start + len > (int)cur.size)
+    {
+        cur.size = start + len;
+        cur.bytes = (start + len) % BLOCKSIZE;
+        if (!this->vhdc.WriteBlock(cur.bid, (char*)&cur, sizeof(iNode))) return false;
+    }
     return true;
 }
 

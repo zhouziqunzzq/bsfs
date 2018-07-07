@@ -9,5 +9,6 @@ void TestFSController(FSController& fsc);
 void TestGetBIDByFOff(FSController& fsc);
 void TestReadFileToBuf(FSController& fsc);
 void TestAppendBlocksToFile(FSController &fsc);
+void TestWriteFileFromBuf(FSController &fsc);
 
 #endif // TEST_H_INCLUDED
