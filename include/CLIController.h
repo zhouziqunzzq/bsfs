@@ -4,11 +4,15 @@
 #include "iNode.h"
 #include "SFD.h"
 #include "BSFSParams.h"
+#include "UserController.h"
+#include "FSController.h"
+
+using namespace std;
 
 class CLIController
 {
     public:
-        CLIController();
+        CLIController(FSController& _fsc, UserController& _uc, int uid);
         bool MakeMenu();
         bool ReadCommand();
         void DisplayMode(const char mode, char* rst);
@@ -16,6 +20,8 @@ class CLIController
     protected:
 
     private:
+        FSController& fsc;
+        UserController& uc;
         int uid;
         iNode nowiNode;
         char month[12][5]={"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",

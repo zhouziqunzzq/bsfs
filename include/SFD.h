@@ -6,10 +6,10 @@
 
 using namespace std;
 
-struct SFD  // sizeof(SFD) = 32
+struct SFD  // sizeof(SFD) = 36
 {
     char name[FILENAME_MAXLEN];
-    unsigned short inode;
+    bid_t inode;
 
     SFD()
     {

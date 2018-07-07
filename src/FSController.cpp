@@ -406,7 +406,7 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
     return true;
 }
 
-bool FSController::InitDirSFDList(iNode& cur, ibid_t parentBid)
+bool FSController::InitDirSFDList(iNode& cur, bid_t parentBid)
 {
     SFD sfdList[2];
     // Dot denode itself
@@ -425,6 +425,7 @@ bool FSController::CreateRootDir()
     iNode rootiNode;
     rootiNode.bid = ROOTDIRiNODE;
     rootiNode.parent = ROOTDIRiNODE;
+    strcpy(rootiNode.name, "/");
     rootiNode.mode = DIRFLAG | OWNER_RFLAG | OWNER_WFLAG | OWNER_XFLAG | PUBLIC_RFLAG |
         PUBLIC_XFLAG;
     rootiNode.nlink = 1;
@@ -441,31 +442,74 @@ bool FSController::CreateRootDir()
     return true;
 }
 
-bool FSController::CreateSubDir(iNode& curDir, char* dirname, int ownerUid)
+bool FSController::TouchFile(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst)
 {
-    SFD* dir = new SFD[curDir.size / sizeof(SFD) + 1];
-    if (!this->GetContentInDir(curDir, dir)) return false;
-    int rst;
-    // Check if dirname already exists
-    if (this->FindContentInDir(dir, curDir.size / sizeof(SFD), dirname, &rst))
+    // Read current dir
+    SFD* dir = new SFD[curDir.size / sizeof(SFD)];
+    if (!this->GetContentInDir(curDir, dir))
+    {
+        delete[] dir;
+        return false;
+    }
+    int findRst;
+    // Check if name already exists
+    if (this->FindContentInDir(dir, curDir.size / sizeof(SFD), name, &findRst))
     {
         delete[] dir;
         return false;
     }
     // Create new iNode
-    bid_t rst;
-    if (!this->ifbc->Distribute(&rst)) return false;
-    iNode subDiriNode;
-    subDiriNode.bid = rst;
-    subDiriNode.parent = ROOTDIRiNODE;
-    subDiriNode.mode = DIRFLAG | OWNER_RFLAG | OWNER_WFLAG | OWNER_XFLAG | PUBLIC_RFLAG |
-        PUBLIC_XFLAG;
-    subDiriNode.nlink = 1;
-    subDiriNode.uid = ROOT_UID;
-    subDiriNode.size = 0;
-    subDiriNode.atime = rootiNode.mtime = time(nullptr);
-    subDiriNode.blocks = 0;
-    subDiriNode.bytes = 0;
-
+    iNode newiNode;
+    if (!this->ifbc.Distribute(&newiNode.bid))
+    {
+        delete[] dir;
+        return false;
+    }
+    newiNode.parent = curDir.bid;
+    strcpy(newiNode.name, name);
+    newiNode.mode = mode;
+    newiNode.nlink = 1;
+    newiNode.uid = ownerUid;
+    newiNode.size = 0;
+    newiNode.atime = newiNode.mtime = time(nullptr);
+    newiNode.blocks = 0;
+    newiNode.bytes = 0;
+    // Save new iNode
+    if (!this->vhdc.WriteBlock(newiNode.bid, (char*)&newiNode, sizeof(iNode)))
+    {
+        delete[] dir;
+        return false;
+    }
+    memcpy((char*)rst, (char*)&newiNode, sizeof(iNode));
+    // Append new SFD
+    SFD newSFD;
+    strcpy(newSFD.name, name);
+    newSFD.inode = newiNode.bid;
+    if (!this->WriteFileFromBuf(curDir, curDir.size, sizeof(SFD), (char*)&newSFD))
+    {
+        delete[] dir;
+        return false;
+    }
+    // Clean up
     delete[] dir;
+    return true;
+}
+
+bool FSController::CreateSubDir(iNode& curDir, char* name, char mode, int ownerUid)
+{
+    iNode newiNode;
+    if (!this->TouchFile(curDir, name, mode | DIRFLAG, ownerUid, &newiNode))
+        return false;
+    return this->InitDirSFDList(newiNode, curDir.bid);
+}
+
+bool FSController::GetiNodeByID(bid_t id, iNode* rst)
+{
+    return this->vhdc.ReadBlock(id, (char*)rst, sizeof(iNode));
+}
+
+void FSController::GetAbsDir(const iNode& cur, char* dir)
+{
+    // TODO
+    return;
 }

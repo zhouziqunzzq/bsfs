@@ -7,10 +7,11 @@
 
 using namespace std;
 
-struct iNode    // sizeof(iNode) = 96
+struct iNode    // sizeof(iNode) = 128
 {
     bid_t bid;  // Block ID
     bid_t parent;  // parent iNode block ID
+    char name[FILENAME_MAXLEN]; // save filename in iNode for convinience
     char mode;  // d rwx(owner) rwx(public) softlink
     unsigned int nlink; // hard link count (default: 1)
     unsigned short uid; // owner user ID

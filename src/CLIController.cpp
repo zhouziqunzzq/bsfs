@@ -11,17 +11,18 @@
 
 using namespace std;
 
-CLIController::CLIController()
+CLIController::CLIController(FSController& _fsc, UserController& _uc, int _uid) :
+    fsc(_fsc), uc(_uc), uid(_uid)
 {
-    //ctor
+    return;
 }
 
 bool CLIController::MakeMenu()
 {
     char dir[MAX_CMD_LEN];
-    GetAbsDir(nowiNode, dir);
+    this->fsc.GetAbsDir(nowiNode, dir);
     char uname[MAX_UNAME_LEN];
-    if(!UserController::GetUsernameByUid(uid, uname))
+    if(!this->uc.GetUsernameByUid(uid, uname))
         return false;
 
     cout << "--" << uname << "@" << HOSTNAME << " ";
@@ -69,14 +70,14 @@ bool CLIController::ReadCommand()
 
     int subDirnum = nowiNode.size / sizeof(SFD);
     SFD* DirSet = new SFD[subDirnum];
-    if(!FSController::GetContentInDir(nowiNode, DirSet))
+    if(!this->fsc.GetContentInDir(nowiNode, DirSet))
     {
         delete[] DirSet;
         return false;
     }
     int maxWidth = 0;
     for(int i = 0; i < subDirnum; i++)
-        maxWidth = max(maxWidth, strlen(DirSet[i].name));
+        maxWidth = max(maxWidth, (int)strlen(DirSet[i].name));
 
     if(strcmp(cmd[1], "ls") == 0)
     {
@@ -111,17 +112,17 @@ bool CLIController::ReadCommand()
 
         for(int i = 0; i < subDirnum; i++)
         {
-            if(GetiNodeByID(DirSet[i].inode, rst))
+            if(this->fsc.GetiNodeByID(DirSet[i].inode, &rst))
             {
                 for(int j = 0; j < 8; j++) cout << moderst[i];
                 cout << " ";
                 cout << rst.nlink << " ";
-                if(!UserController::GetUsernameByUid(rst.uid, uname))
+                if(!this->uc.GetUsernameByUid(rst.uid, uname))
                     return false;
                 else cout << uname << " ";
                 cout << rst.size << " ";
                 totSize += rst.size;
-                tm* t = localtime(rst.mtime);
+                tm* t = localtime(&rst.mtime);
                 cout << month[t->tm_mon] << " ";
                 cout << t->tm_mday << " ";
                 cout << t->tm_hour << ":" << t->tm_min << " ";
