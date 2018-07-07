@@ -47,7 +47,7 @@ bool VHDController::Load()
     return this->_file.good();
 }
 
-bool VHDController::ReadBlock(int blockID, char *buffer, int len)
+bool VHDController::ReadBlock(bid_t blockID, char *buffer, int len)
 {
     if (blockID < BLOCKNUM && len <= BLOCKSIZE)
     {
@@ -64,7 +64,7 @@ bool VHDController::ReadBlock(int blockID, char *buffer, int len)
     }
 }
 
-bool VHDController::WriteBlock(int blockID, char *buffer, int len)
+bool VHDController::WriteBlock(bid_t blockID, char *buffer, int len)
 {
     if (blockID < BLOCKNUM && len <= BLOCKSIZE)
     {

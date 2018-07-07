@@ -28,11 +28,13 @@ bool FSController::Format()
     }
 
     // Format Super Block and construct GPL
+    fbc.SetFullFlag();
     for(int i = DATABLOCK_MIN; i <= DATABLOCK_MAX; i++)
         if(!fbc.Recycle(i)) return false;
     if(!fbc.SaveSuperBlock()) return false;
 
     // Fomat iNode Super Block and construct GPL
+    ifbc.SetFullFlag();
     for(int i = iNODEBLOCK_MIN + 1; i <= iNODEBLOCK_MAX; i++)
         if(!ifbc.Recycle(i)) return false;
     if(!ifbc.SaveSuperBlock()) return false;
@@ -100,6 +102,131 @@ bool FSController::ReadFileToBuf(const iNode& cur, int start, int len, char* buf
     //char* e = tbuf + start % BLOCKSIZE + len;
     memcpy(buf, s, len);
     delete[] tbuf;
+    return true;
+}
+
+// Append new blocks count by blockCnt to a file identified by iNode& cur
+// and update its iNode
+bool FSController::AppendBlocksToFile(iNode& cur, int blockCnt)
+{
+    // Check if blockCnt is bigger than the max block cnt
+    if (cur.blocks + blockCnt > MAX_BLOCK_CNT) return false;
+
+    bid_t dataBid = 0, directBid = 0, indir1Bid = 0, indir2Bid = 0;
+    char indir1Buf[BLOCKSIZE], indir2Buf[BLOCKSIZE];
+    bid_t indir1BufLoadBid = 0, indir2BufLoadBid = 0;
+    memset(indir1Buf, 0, sizeof(BLOCKSIZE));
+    memset(indir2Buf, 0, sizeof(BLOCKSIZE));
+    // Append new blocks one by one
+    for (int i = (int)cur.blocks; i < (int)cur.blocks + blockCnt; i++)
+    {
+        if (i < DIRECT_BLOCK_CNT)   // direct index
+        {
+            if (!this->fbc.Distribute(&directBid)) return false;
+            cur.data[i] = directBid;
+        }
+        else if (i == DIRECT_BLOCK_CNT) // level 1 indirect index(new)
+        {
+            // Distribute level 1 indirect index block
+            if (!this->fbc.Distribute(&indir1Bid)) return false;
+            cur.data[INODE_INDIR1_MAX] = indir1Bid;
+            indir1BufLoadBid = indir1Bid;
+            // and distribute 1 data block
+            if (!this->fbc.Distribute(&dataBid)) return false;
+            memcpy(indir1Buf, (char*)&dataBid, sizeof(bid_t));
+            if (!vhdc.WriteBlock(indir1Bid, indir1Buf, BLOCKSIZE)) return false;
+        }
+        else if (i < (int)(DIRECT_BLOCK_CNT + INDIR1_BLOCK_CNT))   // level 1 indirect index
+        {
+            // Load level 1 indirect index block if needed
+            if (indir1BufLoadBid != cur.data[INODE_INDIR1_MAX])
+            {
+                indir1Bid = cur.data[INODE_INDIR1_MAX];
+                if (!this->vhdc.ReadBlock(indir1Bid, indir1Buf)) return false;
+                indir1BufLoadBid = cur.data[INODE_INDIR1_MAX];
+            }
+            // and distribute 1 data block
+            if (!this->fbc.Distribute(&dataBid)) return false;
+            memcpy(indir1Buf + (i - DIRECT_BLOCK_CNT) * sizeof(bid_t),
+                   (char*)&dataBid, sizeof(bid_t));
+            if (!vhdc.WriteBlock(indir1Bid, indir1Buf, BLOCKSIZE)) return false;
+        }
+        else if (i == DIRECT_BLOCK_CNT + INDIR1_BLOCK_CNT)  // level 2 indirect index(new)
+        {
+            // Distribute level 2 indirect index block
+            if (!this->fbc.Distribute(&indir2Bid)) return false;
+            cur.data[INODE_INDIR2_MAX] = indir2Bid;
+            indir2BufLoadBid = indir2Bid;
+            // Distribute level 1 indirect index block
+            memset(indir1Buf, 0, BLOCKSIZE);
+            if (!this->fbc.Distribute(&indir1Bid)) return false;
+            memcpy(indir2Buf, (char*)&indir1Bid, sizeof(bid_t));
+            if (!vhdc.WriteBlock(indir2Bid, indir2Buf, BLOCKSIZE)) return false;
+            // and distribute 1 data block
+            if (!this->fbc.Distribute(&dataBid)) return false;
+            memcpy(indir1Buf, (char*)&dataBid, sizeof(bid_t));
+            if (!vhdc.WriteBlock(indir1Bid, indir1Buf, BLOCKSIZE)) return false;
+            indir1BufLoadBid = indir1Bid;
+        }
+        else    // level 2 indirect index
+        {
+            // Load level 2 indirect index block if needed
+            if (indir2BufLoadBid != cur.data[INODE_INDIR2_MAX])
+            {
+                indir2Bid = cur.data[INODE_INDIR2_MAX];
+                if (!this->vhdc.ReadBlock(indir2Bid, indir2Buf)) return false;
+                indir2BufLoadBid = cur.data[INODE_INDIR2_MAX];
+            }
+            // Load level 1 indirect index block or
+            // append new level 1 indirect index block if needed
+            unsigned int indir21Off = i - DIRECT_BLOCK_CNT - INDIR1_BLOCK_CNT;
+            if (indir21Off % (BLOCKSIZE / sizeof(bid_t)) == 0)
+            {
+                // Distribute level 1 indirect index block
+                memset(indir1Buf, 0, BLOCKSIZE);
+                if (!this->fbc.Distribute(&indir1Bid)) return false;
+                indir1BufLoadBid = indir1Bid;
+                memcpy(indir2Buf + (indir21Off / (BLOCKSIZE / sizeof(bid_t))) * sizeof(bid_t),
+                       (char*)&indir1Bid, sizeof(bid_t));
+                if (!this->vhdc.WriteBlock(indir2Bid, indir2Buf, BLOCKSIZE)) return false;
+            }
+            else
+            {
+                // Load level 1 indirect index block if needed
+                bid_t indir21Bid = 0;
+                // toff is the address of the level 1 indirect index block ID of
+                // the level 2 indirect index
+                char* toff = indir2Buf + (indir21Off /
+                       (BLOCKSIZE / sizeof(bid_t))) * sizeof(bid_t);
+                memcpy((char*)&indir21Bid, toff, sizeof(bid_t));
+                if (indir1BufLoadBid != indir21Bid)
+                {
+                    if (!this->vhdc.ReadBlock(indir21Bid, indir1Buf)) return false;
+                    indir1BufLoadBid = indir21Bid;
+                }
+            }
+            // and distribute 1 data block
+            if (!this->fbc.Distribute(&dataBid)) return false;
+            memcpy(indir1Buf + (indir21Off % (BLOCKSIZE / sizeof(bid_t))) * sizeof(bid_t),
+                   (char*)&dataBid, sizeof(bid_t));
+            if (!this->vhdc.WriteBlock(indir1BufLoadBid, indir1Buf, BLOCKSIZE)) return false;
+        }
+    }
+    cout << "Updating iNode" << endl;
+    // Update iNode
+    cur.blocks += blockCnt;
+    if (!this->vhdc.WriteBlock(cur.bid, (char*)&cur, sizeof(iNode))) return false;
+    return true;
+}
+
+bool FSController::WriteFileFromBuf(iNode& cur, int start, int len, char* buf)
+{
+    // Append new blocks if needed
+    /*if (start > (int)cur.size - 1 || start + len > (int)cur.size)
+    {
+        int dataBlockNeedCnt = (start + len - 1) / BLOCKSIZE + cur.blocks - 1;
+        //
+    }*/
     return true;
 }
 
@@ -210,6 +337,7 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
                     }
                 }
                 strcpy(path, newpath);
+                path[newlen++] = '\0';
                 delete[] synlink;
                 delete[] newpath;
                 continue;

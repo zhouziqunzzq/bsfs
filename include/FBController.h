@@ -9,14 +9,15 @@ using namespace std;
 class FBController
 {
     public:
-        FBController(VHDController& _vhdc, int _sbID, int _minbID, int _maxbID);
+        FBController(VHDController& _vhdc, bid_t _sbID, bid_t _minbID, bid_t _maxbID);
         ~FBController();
         bool LoadSuperBLock();
-        bool LoadSuperBLock(int blockID);
+        bool LoadSuperBLock(bid_t blockID);
         bool SaveSuperBlock();
-        bool SaveSuperBlock(int blockID);
-        bool Recycle(int blockID);
-        bool Distribute(int* blockID);
+        bool SaveSuperBlock(bid_t blockID);
+        bool Recycle(bid_t blockID);
+        bool Distribute(bid_t* blockID);
+        void SetFullFlag();
 
     protected:
 

@@ -19,6 +19,8 @@ class FSController
         bool IsFormat();
         bool GetBIDByFOff(const iNode& cur, int foff, int* rst);
         bool ReadFileToBuf(const iNode& cur, int start, int len, char* buf);
+        bool AppendBlocksToFile(iNode& cur, int blockCnt);
+        bool WriteFileFromBuf(iNode& cur, int start, int len, char* buf);
         bool GetContentInDir(const iNode& curDir, SFD* rst);
         bool FindContentInDir(const SFD* DirSet, const int len, char* name, int* rst);
         bool ParsePath(const iNode& curDir, char* path, bool last, iNode* rst);

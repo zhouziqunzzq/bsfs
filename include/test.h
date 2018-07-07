@@ -8,5 +8,6 @@ void TestVHDController(VHDController& vhdc);
 void TestFSController(FSController& fsc);
 void TestGetBIDByFOff(FSController& fsc);
 void TestReadFileToBuf(FSController& fsc);
+void TestAppendBlocksToFile(FSController &fsc);
 
 #endif // TEST_H_INCLUDED

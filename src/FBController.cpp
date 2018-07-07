@@ -5,7 +5,7 @@
 
 using namespace std;
 
-FBController::FBController(VHDController& _vhdc, int _sbID, int _minbID, int _maxbID) :
+FBController::FBController(VHDController& _vhdc, bid_t _sbID, bid_t _minbID, bid_t _maxbID) :
     vhdc(_vhdc), superblockID(_sbID), minblockID(_minbID), maxblockID(_maxbID)
 {
     this->LoadSuperBLock();
@@ -24,7 +24,7 @@ bool FBController::LoadSuperBLock()
                                 (char*)&this->superblock, sizeof(SuperBlock));
 }
 
-bool FBController::LoadSuperBLock(int blockID)
+bool FBController::LoadSuperBLock(bid_t blockID)
 {
     return this->vhdc.ReadBlock(blockID,
                                 (char*)&this->superblock, sizeof(SuperBlock));
@@ -36,13 +36,13 @@ bool FBController::SaveSuperBlock()
                                  (char*)&this->superblock, sizeof(SuperBlock));
 }
 
-bool FBController::SaveSuperBlock(int blockID)
+bool FBController::SaveSuperBlock(bid_t blockID)
 {
     return this->vhdc.WriteBlock(blockID,
                                  (char*)&this->superblock, sizeof(SuperBlock));
 }
 
-bool FBController::Recycle(int blockID)
+bool FBController::Recycle(bid_t blockID)
 {
     if (this->superblock.cnt == GROUPSIZE)
     {
@@ -56,7 +56,7 @@ bool FBController::Recycle(int blockID)
     return true;
 }
 
-bool FBController::Distribute(int* blockID)
+bool FBController::Distribute(bid_t* blockID)
 {
     if(this->superblock.freeStack[this->superblock.cnt-1] == 0) return false;
     *blockID = this->superblock.freeStack[this->superblock.cnt-1];
@@ -67,4 +67,10 @@ bool FBController::Distribute(int* blockID)
     }
     else this->superblock.cnt--;
     return true;
+}
+
+void FBController::SetFullFlag()
+{
+    this->superblock.freeStack[0] = 0;
+    this->superblock.cnt = 1;
 }

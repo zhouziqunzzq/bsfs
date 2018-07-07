@@ -8,8 +8,8 @@ using namespace std;
 
 struct SuperBlock   // sizeof(SuperBlock) = BLOCKSIZE
 {
-    int cnt;    // Free blocks in the group, also used for stack top pointer
-    int freeStack[GROUPSIZE];   // Free blocks stack
+    unsigned int cnt;    // Free blocks in the group, also used for stack top pointer
+    bid_t freeStack[GROUPSIZE];   // Free blocks stack
 
     SuperBlock()
     {

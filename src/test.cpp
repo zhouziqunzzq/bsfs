@@ -59,7 +59,7 @@ void TestFSController(FSController& fsc)
 
     // Test GLP Distribute
     cout << "================Test GLP Distribute=================" << endl;
-    int bid;
+    bid_t bid;
     int blockCnt = 0;
     while (fsc.fbc.Distribute(&bid))
     {
@@ -188,4 +188,26 @@ void TestReadFileToBuf(FSController& fsc)
         if (testBuf3[i] == '!') ++cnt;
     }
     cout << cnt << endl;
+}
+
+void TestAppendBlocksToFile(FSController &fsc)
+{
+    cout << "================Test TestAppendBlocksToFile=================" << endl;
+    iNode testiNode;
+    testiNode.size = 0;
+    testiNode.blocks = 0;
+    testiNode.bytes = 0;
+    fsc.ifbc.Distribute(&testiNode.bid);
+    cout << "testiNode.bid: " << testiNode.bid << endl;
+    fsc.vhdc.WriteBlock(testiNode.bid, (char*)&testiNode, sizeof(iNode));
+
+    if (fsc.AppendBlocksToFile(testiNode, 30000))
+        cout << "Successfully appended" << endl;
+    else
+        cout << "Failed to append" << endl;
+
+    cout << "testiNode.blocks: " << testiNode.blocks << endl;
+
+    for (int i = 0; i < 12; i++)
+        cout << "testiNode.data[" << i << "]: " << testiNode.data[i] << endl;
 }
