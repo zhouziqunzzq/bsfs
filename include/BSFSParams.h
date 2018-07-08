@@ -60,6 +60,8 @@ typedef unsigned short ibid_t;
 #define WELCOMEMSG "Booting BSFS..."
 #define MAXFOLLOWLINK 40
 #define HOSTNAME "yukiyukiyu"
+const char DOT[2] = ".";
+const char DOTDOT[3] = "..";
 
 #endif // BSFSPARAMS_H_INCLUDED
 

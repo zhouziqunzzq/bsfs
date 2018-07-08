@@ -21,7 +21,7 @@ int main()
     TestAppendBlocksToFile(fsc);
     TestWriteFileFromBuf(fsc);
     TestCreateRootDir(fsc);
-    TestCreateSubDir(fsc);*/
+    TestCreateSubDir(fsc);
     TestParsePath(fsc);
     TestGetAbsDir(fsc);
     TestTouch(fsc);
@@ -29,6 +29,7 @@ int main()
     TestWriteFileFromBuf2(fsc);
     TestDeleteFile(fsc);
     TestGetContentInDir(fsc);
+    TestDeleteDir(fsc);*/
 
     return 0;
 }

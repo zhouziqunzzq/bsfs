@@ -19,9 +19,11 @@ class FSController
         bool Format();
         bool IsFormat();
         // General operation
-        bool Copy(const iNode& src, const iNode& des, char* name);
-        bool Move(const iNode& src, const iNode& des, char* name);
-        bool ChangeMode(const iNode& cur, char mode);
+        bool Copy(const iNode& src, iNode& des, char* name, int uid);
+        bool Move(const iNode& src, iNode& des, char* name);
+        bool LinkH(iNode& src, iNode& des, char* name);
+        bool LinkS(char* src, iNode& des, char* name);
+        bool ChangeMode(iNode& cur, char mode);
         void GetAbsDir(const iNode& cur, char* dir);
         bool ParsePath(const iNode& curDir, char* path, bool last, iNode* rst);
         bool Touch(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst);
@@ -46,10 +48,16 @@ class FSController
         //
 
     private:
+        // Block operation
         bool DeleteDirectBlocks(const iNode& cur);
         bool DeleteIndir1Blocks(const iNode& cur);
         bool DeleteIndir2Blocks(const iNode& cur);
+        // SFD operation
         bool DeleteSFDEntry(const iNode& cur);
+        // File operation
+        bool CopyFile(const iNode& src, iNode& des, char* name, int uid);
+        // Directory operation
+        bool CopyDir(const iNode& src, iNode& des, char* name, int uid);
 };
 
 #endif // FSCONTROLLER_H

@@ -422,10 +422,10 @@ bool FSController::InitDirSFDList(iNode& cur, bid_t parentBid)
 {
     SFD sfdList[2];
     // Dot denode itself
-    strcpy(sfdList[0].name, ".");
+    strcpy(sfdList[0].name, DOT);
     sfdList[0].inode = cur.bid;
     // Dot Dot denode its parent
-    strcpy(sfdList[1].name, "..");
+    strcpy(sfdList[1].name, DOTDOT);
     sfdList[1].inode = parentBid;
 
     this->WriteFileFromBuf(cur, 0, sizeof(SFD) * 2, (char*)&sfdList);
@@ -664,22 +664,27 @@ bool FSController::DeleteFile(const iNode& cur)
 {
     // Not for directory
     if (cur.mode & DIRFLAG) return false;
-    // Recycle data blocks
-    if (cur.blocks <= DIRECT_BLOCK_CNT)
+    // Recycle data blocks if nlink == 1
+    // (if nlink > 1, then there're other hard links,
+    //  which means we can't recycle its data blocks yet)
+    if (cur.nlink == 1)
     {
-        if(!this->DeleteDirectBlocks(cur))
-            return false;
-    }
-    else if (cur.blocks <= DIRECT_BLOCK_CNT + INDIR1_BLOCK_CNT)
-    {
-        if (!this->DeleteDirectBlocks(cur) & this->DeleteIndir1Blocks(cur))
-            return false;
-    }
-    else
-    {
-        if (!this->DeleteDirectBlocks(cur) & this->DeleteIndir1Blocks(cur) &
-            this->DeleteIndir2Blocks(cur))
-            return false;
+        if (cur.blocks <= DIRECT_BLOCK_CNT)
+        {
+            if(!this->DeleteDirectBlocks(cur))
+                return false;
+        }
+        else if (cur.blocks <= DIRECT_BLOCK_CNT + INDIR1_BLOCK_CNT)
+        {
+            if (!this->DeleteDirectBlocks(cur) & this->DeleteIndir1Blocks(cur))
+                return false;
+        }
+        else
+        {
+            if (!this->DeleteDirectBlocks(cur) & this->DeleteIndir1Blocks(cur) &
+                this->DeleteIndir2Blocks(cur))
+                return false;
+        }
     }
     // Delete SFD in parent
     if (!this->DeleteSFDEntry(cur)) return false;
@@ -689,23 +694,125 @@ bool FSController::DeleteFile(const iNode& cur)
 
 bool FSController::DeleteDir(const iNode& cur)
 {
-    // TODO
+    // Only for dir
+    if (!(cur.mode & DIRFLAG)) return false;
+    // Readin SFD List
+    iNode nowiNode;
+    SFD* SFDList = new SFD[cur.size / sizeof(SFD)];
+    if (!GetContentInDir(cur, SFDList))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    // Iterate over SFD List
+    // Note: it's forbidden to create a hard link of a dir,
+    // so we don't need to consider that.
+    for (int i = 0; i < (int)(cur.size / sizeof(SFD)); i++)
+    {
+        cout << "SFDList[i].name: " << SFDList[i].name << endl;
+        // Ignore . or ..
+        if (strcmp(SFDList[i].name, DOT) == 0 ||
+            strcmp(SFDList[i].name, DOTDOT) == 0)
+            continue;
+        // Readin iNode
+        if (!this->GetiNodeByID(SFDList[i].inode, &nowiNode))
+        {
+            delete[] SFDList;
+            return false;
+        }
+        if (nowiNode.mode & DIRFLAG)    // Delete subdir recursively
+        {
+            if (!this->DeleteDir(nowiNode))
+            {
+                delete[] SFDList;
+                return false;
+            }
+        }
+        else    // Delete regular file
+        {
+            if (!this->DeleteFile(nowiNode))
+            {
+                delete[] SFDList;
+                return false;
+            }
+        }
+    }
+    // Delete SFD in parent
+    if (!this->DeleteSFDEntry(cur))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    // Recycle iNode block
+    if (!this->ifbc.Recycle(cur.bid))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    delete[] SFDList;
     return true;
 }
 
-bool FSController::ChangeMode(const iNode& cur, char mode)
+bool FSController::ChangeMode(iNode& cur, char mode)
+{
+    cur.mode = mode;
+    return this->SaveiNodeByID(cur.bid, cur);
+}
+
+// Copy file identified by src into a dir identified by des with given name
+bool FSController::CopyFile(const iNode& src, iNode& des, char* name, int uid)
+{
+    // Only for file
+    if (src.mode & DIRFLAG) return false;
+    // Touch new file with given name
+    iNode newiNode;
+    if (!this->Touch(des, name, src.mode, uid, &newiNode))
+        return false;
+    // Readin src file
+    char* buf = new char[src.size];
+    if (!this->ReadFileToBuf(src, 0, src.size, buf))
+    {
+        delete[] buf;
+        return false;
+    }
+    // Write to des
+    if (!this->WriteFileFromBuf(newiNode, 0, src.size, buf))
+    {
+        delete[] buf;
+        return false;
+    }
+
+    delete[] buf;
+    return true;
+}
+
+bool FSController::CopyDir(const iNode& src, iNode& des, char* name, int uid)
 {
     // TODO
     return true;
 }
 
-bool FSController::Copy(const iNode& src, const iNode& des, char* name)
+bool FSController::Copy(const iNode& src, iNode& des, char* name, int uid)
+{
+    if (src.mode & DIRFLAG)
+        return this->CopyDir(src, des, name, uid);
+    else
+        return this->CopyFile(src, des, name, uid);
+}
+
+bool FSController::Move(const iNode& src, iNode& des, char* name)
 {
     // TODO
     return true;
 }
 
-bool FSController::Move(const iNode& src, const iNode& des, char* name)
+bool LinkH(iNode& src, iNode& des, char* name)
+{
+    // TODO
+    return true;
+}
+
+bool LinkS(char* src, iNode& des, char* name)
 {
     // TODO
     return true;
