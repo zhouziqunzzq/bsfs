@@ -281,6 +281,126 @@ void TestParsePath(FSController& fsc)
     if (!fsc.ParsePath(rootiNode, path, true, &rstiNode))
         cout << "Failed to parse " << path << endl;
     else
+    {
         cout << "Parse " << path << " complete" << endl;
-    cout << rstiNode.name << endl;
+        cout << rstiNode.name << endl;
+    }
+}
+
+void TestGetAbsDir(FSController& fsc)
+{
+    cout << "================Test GetAbsDir=================" << endl;
+    char path[MAX_CMD_LEN] = "/home";
+    iNode rootiNode;
+    iNode rstiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &rstiNode))
+        cout << "Failed to parse " << path << endl;
+
+    char rstPath[MAX_CMD_LEN];
+    fsc.GetAbsDir(rstiNode, rstPath);
+    cout << "Abs Dir: " << rstPath << endl;
+}
+
+void TestTouch(FSController& fsc)
+{
+    cout << "================Test Touch=================" << endl;
+    char path[MAX_CMD_LEN] = "/home";
+    iNode rootiNode;
+    iNode homeiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &homeiNode))
+        cout << "Failed to parse " << path << endl;
+
+    // Touch /home/1.txt
+    char fname[] = "1.txt";
+    iNode rstiNode;
+    if (!fsc.Touch(homeiNode, fname, FILE_DEFAULT_FLAG, ROOTDIRiNODE, &rstiNode))
+    {
+        cout << "Failed to touch " << fname << endl;
+    }
+    else
+    {
+        cout << "Touch " << fname << " success" << endl;
+    }
+}
+
+void TestGetContentInDir(FSController& fsc)
+{
+    cout << "================Test GetContentInDir=================" << endl;
+    char path[MAX_CMD_LEN] = "/home";
+    iNode rootiNode;
+    iNode homeiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &homeiNode))
+        cout << "Failed to parse " << path << endl;
+
+    SFD* SFDList = new SFD[homeiNode.size / sizeof(SFD)];
+    if (!fsc.GetContentInDir(homeiNode, SFDList))
+    {
+        cout << "Failed to ls /home" << endl;
+    }
+    else
+    {
+        for (int i = 0; i < (int)(homeiNode.size / sizeof(SFD)); i++)
+        {
+            cout << SFDList[i].name << endl;
+        }
+    }
+    delete[] SFDList;
+}
+
+void TestWriteFileFromBuf2(FSController &fsc)
+{
+    cout << "================Test WriteFileFromBuf2=================" << endl;
+    char path[MAX_CMD_LEN] = "/home/1.txt";
+    iNode rootiNode;
+    iNode txtiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &txtiNode))
+        cout << "Failed to parse " << path << endl;
+
+    char s[1024 * 270];
+    for (int i = 0; i < 1024 * 270; i++)
+        s[i] = 'y';
+    if (!fsc.WriteFileFromBuf(txtiNode, 0, 1024 * 270, s))
+    {
+        cout << "Failed to write " << path << endl;
+    }
+    else
+    {
+        cout << "Write " << path << " success" << endl;
+        cout << "txtiNode.size: " << txtiNode.size << endl;
+        for (int i = 0; i < 12; i++)
+            cout << "txtiNode.data[" << i << "]: " << txtiNode.data[i] << endl;
+    }
+}
+
+void TestDeleteFile(FSController &fsc)
+{
+    cout << "================Test DeleteFile=================" << endl;
+    char path[MAX_CMD_LEN] = "/home/1.txt";
+    iNode rootiNode;
+    iNode txtiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &txtiNode))
+        cout << "Failed to parse " << path << endl;
+
+    if (!fsc.DeleteFile(txtiNode))
+        cout << "Failed to delete " << path << endl;
+    else
+    {
+        cout << "Delete " << path << " success" << endl;
+    }
+
+    /*bid_t bid;
+    if (!fsc.fbc.Distribute(&bid))
+        cout << "Failed to Distribute" << endl;
+    else
+    {
+        cout << "Distributed bid: " << bid << endl;
+        cout << "Expected bid: " << txtiNode.data[0] << endl;
+    }
+    if (!fsc.fbc.Recycle(bid))
+        cout << "Failed to Recycle" << endl;*/
 }

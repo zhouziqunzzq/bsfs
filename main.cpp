@@ -23,6 +23,12 @@ int main()
     TestCreateRootDir(fsc);
     TestCreateSubDir(fsc);*/
     TestParsePath(fsc);
+    TestGetAbsDir(fsc);
+    TestTouch(fsc);
+    TestGetContentInDir(fsc);
+    TestWriteFileFromBuf2(fsc);
+    TestDeleteFile(fsc);
+    TestGetContentInDir(fsc);
 
     return 0;
 }

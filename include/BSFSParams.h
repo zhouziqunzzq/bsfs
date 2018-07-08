@@ -31,6 +31,7 @@ typedef unsigned short ibid_t;
 #define INDIR1_BLOCK_CNT (BLOCKSIZE) / sizeof(bid_t)
 #define INDIR2_BLOCK_CNT ((BLOCKSIZE) * (BLOCKSIZE)) / (sizeof(bid_t) * sizeof(bid_t))
 #define MAX_BLOCK_CNT (DIRECT_BLOCK_CNT + INDIR1_BLOCK_CNT + INDIR2_BLOCK_CNT -1 - (BLOCKSIZE / sizeof(bid_t)))
+#define MAX_INODE_CNT (iNODEBLOCK_MAX - iNODEBLOCK_MIN + 1)
 // SFD
 #define FILENAME_MAXLEN 30
 // File Mode
@@ -44,11 +45,17 @@ typedef unsigned short ibid_t;
 #define SYNLINKFLAG 1
 #define OWNER_ALLFLAG (OWNER_RFLAG | OWNER_WFLAG | OWNER_XFLAG)
 #define PUBLIC_ALLFLAG (PUBLIC_RFLAG | PUBLIC_WFLAG | PUBLIC_XFLAG)
+#define DIR_DEFAULT_FLAG (DIRFLAG | OWNER_ALLFLAG | PUBLIC_RFLAG | PUBLIC_XFLAG)
+#define FILE_DEFAULT_FLAG (OWNER_RFLAG | OWNER_WFLAG | PUBLIC_RFLAG)
 // User
 #define ROOT_UID 1
 #define MAX_UNAME_LEN 32
 // CLI
 #define MAX_CMD_LEN 1024
+// Process
+#define MAX_OPEN_CNT_P 128
+#define MAX_OPEN_CNT_F 128
+#define MAX_PROCESS_CNT 65535
 // Other
 #define WELCOMEMSG "Booting BSFS..."
 #define MAXFOLLOWLINK 40

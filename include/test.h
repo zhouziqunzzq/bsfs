@@ -15,5 +15,10 @@ void TestCreateRootDir(FSController& fsc);
 void TestCreateSubDir(FSController& fsc);
 void TestParsePath(FSController& fsc);
 void TestParsePath(FSController& fsc);
+void TestGetAbsDir(FSController& fsc);
+void TestTouch(FSController& fsc);
+void TestGetContentInDir(FSController& fsc);
+void TestWriteFileFromBuf2(FSController &fsc);
+void TestDeleteFile(FSController &fsc);
 
 #endif // TEST_H_INCLUDED

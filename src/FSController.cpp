@@ -298,6 +298,7 @@ bool FSController::WriteFileFromBuf(iNode& cur, int start, int len, char* buf)
 
 bool FSController::GetContentInDir(const iNode& curDir, SFD* rst)
 {
+    if (!(curDir.mode & DIRFLAG)) return false;
     if(!ReadFileToBuf(curDir, 0, curDir.size, (char*)rst))
         return false;
     return true;
@@ -367,7 +368,7 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
             }
             // If the last level of the path is a file -> true
             // else -> false
-            if(!(tmpiNode.mode & DIRFLAG) && (pp != '\0'))
+            if(!(tmpiNode.mode & DIRFLAG) && (path[pp] != '\0'))
                 return false;
             // Follow symbolic link
             if(tmpiNode.mode & SYNLINKFLAG)
@@ -456,7 +457,7 @@ bool FSController::CreateRootDir()
     return true;
 }
 
-bool FSController::TouchFile(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst)
+bool FSController::Touch(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst)
 {
     // Read current dir
     SFD* dir = new SFD[curDir.size / sizeof(SFD)];
@@ -512,7 +513,7 @@ bool FSController::TouchFile(iNode& curDir, char* name, char mode, int ownerUid,
 bool FSController::CreateSubDir(iNode& curDir, char* name, char mode, int ownerUid)
 {
     iNode newiNode;
-    if (!this->TouchFile(curDir, name, mode | DIRFLAG, ownerUid, &newiNode))
+    if (!this->Touch(curDir, name, mode | DIRFLAG, ownerUid, &newiNode))
         return false;
     if (!this->InitDirSFDList(newiNode, curDir.bid))
         return false;
@@ -531,6 +532,157 @@ bool FSController::SaveiNodeByID(bid_t id, const iNode& inode)
 
 void FSController::GetAbsDir(const iNode& cur, char* dir)
 {
-    // TODO
+    string ts;
+    iNode now;
+    memcpy((char*)&now, (char*)&cur, sizeof(iNode));
+    while (strcmp(now.name, "/") != 0)
+    {
+        string tt(now.name);
+        ts = "/" + tt + ts;
+        this->GetiNodeByID(now.parent, &now);
+    }
+    strcpy(dir, ts.c_str());
     return;
+}
+
+bool FSController::DeleteDirectBlocks(const iNode& cur)
+{
+    int maxi = cur.blocks > DIRECT_BLOCK_CNT ? DIRECT_BLOCK_CNT : cur.blocks;
+    for (bid_t i = 0; i < (unsigned int)maxi; i++)
+    {
+        if (!this->fbc.Recycle(cur.data[i])) return false;
+    }
+    return true;
+}
+
+bool FSController::DeleteIndir1Blocks(const iNode& cur)
+{
+    // Readin indir1 block
+    bid_t indir1Buf[BLOCKSIZE / sizeof(bid_t)];
+    if (!this->vhdc.ReadBlock(cur.data[INODE_INDIR1_MAX], (char*)indir1Buf))
+        return false;
+    // Recycle data blocks
+    int maxi = cur.blocks - DIRECT_BLOCK_CNT > INDIR1_BLOCK_CNT ?
+        (int)INDIR1_BLOCK_CNT : (int)cur.blocks - DIRECT_BLOCK_CNT;
+    for (int i = 0; i < maxi; i++)
+    {
+        if (!this->fbc.Recycle(indir1Buf[i])) return false;
+    }
+    // Recycle indir1 block
+    return this->fbc.Recycle(cur.data[INODE_INDIR1_MAX]);
+}
+
+bool FSController::DeleteIndir2Blocks(const iNode& cur)
+{
+    // Readin indir2 block
+    bid_t indir2Buf[BLOCKSIZE / sizeof(bid_t)];
+    if (!this->vhdc.ReadBlock(cur.data[INODE_INDIR2_MAX], (char*)indir2Buf))
+        return false;
+    // Calc total indir1 count and last indir1 count
+    int indir1Cnt = (cur.blocks - DIRECT_BLOCK_CNT - INDIR1_BLOCK_CNT)
+        / (BLOCKSIZE / sizeof(bid_t));
+    int lastIndir1Cnt = (cur.blocks - DIRECT_BLOCK_CNT - INDIR1_BLOCK_CNT)
+        % (BLOCKSIZE / sizeof(bid_t));
+    // Do recycle
+    bid_t indir1Buf[BLOCKSIZE / sizeof(bid_t)];
+    for (int i = 0; i < indir1Cnt; i++)
+    {
+        // Readin indir1 block
+        if (!this->vhdc.ReadBlock(indir2Buf[i], (char*)&indir1Buf))
+            return false;
+        // Recycle data block (end with 0)
+        int maxj = (i == indir1Cnt - 1 ? lastIndir1Cnt : BLOCKSIZE / sizeof(bid_t));
+        for (int j = 0; j < maxj; j++)
+        {
+            if (!this->fbc.Recycle(indir1Buf[j])) return false;
+        }
+        // Recycle indir1 block
+        if (!this->fbc.Recycle(indir2Buf[i])) return false;
+    }
+    // Recycle indir2 block
+    return this->fbc.Recycle(cur.data[INODE_INDIR2_MAX]);
+}
+
+bool FSController::DeleteSFDEntry(const iNode& cur)
+{
+    // Get parent iNode
+    iNode piNode;
+    if (!this->GetiNodeByID(cur.parent, &piNode)) return false;
+    if (!(piNode.mode & DIRFLAG)) return false;
+    // Get SFD List
+    SFD* SFDList = new SFD[piNode.size / sizeof(SFD)];
+    if (!this->ReadFileToBuf(piNode, 0, piNode.size, (char*)SFDList))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    // Delete target SFD
+    int newp = 0;
+    SFD* newSFDList = new SFD[piNode.size / sizeof(SFD) - 1];
+    bool finded = false;
+    for (int i = 0; i < (int)(piNode.size / sizeof(SFD)); i++)
+    {
+        if (strcmp(SFDList[i].name, cur.name) == 0)
+        {
+            finded = true;
+            continue;
+        }
+        else
+        {
+            memcpy((char*)&newSFDList[newp], (char*)&SFDList[i], sizeof(SFD));
+            newp++;
+        }
+    }
+    if (!finded)
+    {
+        delete[] SFDList;
+        delete[] newSFDList;
+        return false;
+    }
+    // Save new SFD List
+    if (!this->WriteFileFromBuf(piNode, 0, piNode.size - sizeof(SFD), (char*)newSFDList))
+    {
+        delete[] SFDList;
+        delete[] newSFDList;
+        return false;
+    }
+    // Update parent iNode
+    piNode.size -= sizeof(SFD);
+    if (!this->SaveiNodeByID(piNode.bid, piNode))
+    {
+        delete[] SFDList;
+        delete[] newSFDList;
+        return false;
+    }
+
+    delete[] newSFDList;
+    delete[] SFDList;
+    return true;
+}
+
+bool FSController::DeleteFile(const iNode& cur)
+{
+    // Not for directory
+    if (cur.mode & DIRFLAG) return false;
+    // Recycle data blocks
+    if (cur.blocks <= DIRECT_BLOCK_CNT)
+    {
+        if(!this->DeleteDirectBlocks(cur))
+            return false;
+    }
+    else if (cur.blocks <= DIRECT_BLOCK_CNT + INDIR1_BLOCK_CNT)
+    {
+        if (!this->DeleteDirectBlocks(cur) & this->DeleteIndir1Blocks(cur))
+            return false;
+    }
+    else
+    {
+        if (!this->DeleteDirectBlocks(cur) & this->DeleteIndir1Blocks(cur) &
+            this->DeleteIndir2Blocks(cur))
+            return false;
+    }
+    // Delete SFD in parent
+    if (!this->DeleteSFDEntry(cur)) return false;
+    // Recycle iNode block
+    return this->ifbc.Recycle(cur.bid);
 }
