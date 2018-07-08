@@ -12,8 +12,9 @@
 
 using namespace std;
 
-CLIController::CLIController(FSController& _fsc, UserController& _uc, int _uid) :
-    fsc(_fsc), uc(_uc), uid(_uid)
+CLIController::CLIController(FSController& _fsc, UserController& _uc, VHDController& _vhdc,
+                                PIController& _pic, int _uid) :
+    fsc(_fsc), uc(_uc), vhdc(_vhdc), pic(_pic), uid(_uid)
 {
     return;
 }
@@ -84,7 +85,7 @@ bool CLIController::ReadCommand()
     if(tmp[lentmp-1] != ' ') tmp[lentmp++] = ' ';
 
     char cmd[5][MAX_CMD_LEN];
-    memset(cmd, 0, sizseof(cmd));
+    memset(cmd, 0, sizeof(cmd));
     int len[5] = {0}, cmdp = 1;
     for(int i = 0; i < lentmp; i++)
     {
@@ -176,7 +177,7 @@ bool CLIController::ReadCommand()
         if(len[3] != 0) return false;
 
         iNode rst;
-        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, rst))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
             return false;
         if(!(rst.mode & DIRFLAG)) return false;
 
@@ -190,12 +191,13 @@ bool CLIController::ReadCommand()
             return false;
 
         iNode rst;
-        if(!fsc.ParsePath(nowiNode, cmd[2], true, rst))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
             return false;
         if(rst.mode & DIRFLAG) return false;
-        if(!pic.CheckXlock(rst.bid)) return false;
+        if(!this->pic.CheckXlock(rst.bid)) return false;
 
-        pic.FOpen(pid, rst, false);
+        if(!this->pic.FOpen(pid, rst, false))
+            return false;
     }
     if(strcmp(cmd[1], "openw") == 0)
     {
@@ -205,19 +207,20 @@ bool CLIController::ReadCommand()
             return false;
 
         iNode rst;
-        if(!fsc.ParsePath(nowiNode, cmd[2], true, rst))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
             return false;
         if(rst.mode & DIRFLAG) return false;
-        if(!pic.CheckXlock(rst.bid)) return false;
+        if(!this->pic.CheckXlock(rst.bid)) return false;
 
-        pic.FOpen(pid, rst, true);
+        if(!this->pic.FOpen(pid, rst, true))
+            return false;
     }
     if(strcmp(cmd[1], "mkdir") == 0)
     {
         if(len[2] == 0 || len[3] != 0) return false;
 
         iNode rst;
-        if(!fsc.ParsePath(nowiNode, cmd[2], false, rst))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], false, &rst))
             return false;
 
         char dirname[FILENAME_MAXLEN];
@@ -236,20 +239,20 @@ bool CLIController::ReadCommand()
         iNode rst;
         if(len[3] == 0)
         {
-            if(!fsc.ParsePath(nowiNode, cmd[2], true, rst))
+            if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
                 return false;
             if(rst.mode & DIRFLAG) return false;
 
-            if(!fsc.DeleteFile(rst))
+            if(!this->fsc.DeleteFile(rst))
                 return false;
         }
         else
         {
-            if(!fsc.ParsePath(nowiNode, cmd[3], true, rst))
+            if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &rst))
                 return false;
             if(!(rst.mode & DIRFLAG)) return false;
 
-            if(!fsc.DeleteDir(rst))
+            if(!this->fsc.DeleteDir(rst))
                 return false;
         }
     }
@@ -264,10 +267,10 @@ bool CLIController::ReadCommand()
 
         iNode rst;
         int mode;
-        if(!fsc.ParsePath(nowiNode, cmd[3], true, rst))
+        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &rst))
             return false;
         mode = ((cmd[2][0]-'0') << 4) | ((cmd[2][1]-'0') << 1) | (rst.mode);
-        if(!ChangeMode(rst, (char)mode))
+        if(!this->fsc.ChangeMode(rst, (char)mode))
             return false;
     }
     if(strcmp(cmd[1], "cp") == 0)
@@ -275,21 +278,21 @@ bool CLIController::ReadCommand()
         if(len[3] == 0) return false;
 
         iNode srciNode, desiNode;
-        if(!fsc.ParsePath(nowiNode, cmd[2], true, srciNode))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode))
             return false;
         char newname[FILENAME_MAXLEN];
         int newlen = 0;
-        if(!fsc.ParsePath(nowiNode, cmd[3], true, desiNode))
+        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode))
         {
-            if(!fsc.ParsePath(nowiNode, cmd[3], false, desiNode))
+            if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode))
                 return false;
             GetLastSeg(cmd[3], len[3], newname, newlen);
         }
         else
             strcpy(newname, srciNode.name);
 
-        if(!(desiNode & DIRFLAG)) return false;
-        if(!fsc.Copy(srciNode, desiNode, newname))
+        if(!(desiNode.mode & DIRFLAG)) return false;
+        if(!this->fsc.Copy(srciNode, desiNode, newname))
             return false;
     }
     if(strcmp(cmd[1], "mv") == 0)
@@ -297,21 +300,21 @@ bool CLIController::ReadCommand()
         if(len[3] == 0) return false;
 
         iNode srciNode, desiNode;
-        if(!fsc.ParsePath(nowiNode, cmd[2], true, srciNode))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode))
             return false;
         char newname[FILENAME_MAXLEN];
         int newlen = 0;
-        if(!fsc.ParsePath(nowiNode, cmd[3], true, desiNode))
+        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode))
         {
-            if(!fsc.ParsePath(nowiNode, cmd[3], false, desiNode))
+            if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode))
                 return false;
             GetLastSeg(cmd[3], len[3], newname, newlen);
         }
         else
             strcpy(newname, srciNode.name);
 
-        if(!(desiNode & DIRFLAG)) return false;
-        if(!fsc.Move(srciNode, desiNode, newname))
+        if(!(desiNode.mode & DIRFLAG)) return false;
+        if(!this->fsc.Move(srciNode, desiNode, newname))
             return false;
     }
 

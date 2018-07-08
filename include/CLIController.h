@@ -14,12 +14,13 @@ using namespace std;
 class CLIController
 {
     public:
-        CLIController(FSController& _fsc, UserController& _uc, int uid);
+        CLIController(FSController& _fsc, UserController& _uc, VHDController& _vhdc,
+                        PIController& _pic, int uid);
         bool MakeMenu();
         bool ReadCommand();
         void DisplayMode(const char mode, char* rst);
         void GetLastSeg(char* cmd, int len, char* dirname, int &dncnt);
-        bool GetProcessID(char* cmd, int len);
+        bool GetProcessID(char* cmd, int len, pid_t pid);
 
     protected:
 

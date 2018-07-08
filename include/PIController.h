@@ -9,6 +9,9 @@ class PIController
     public:
         PIController();
         bool CheckXlock(const bid_t bid);
+        bool CreateProcess(string pname, pid_t* pid);
+        bool CreateiNodeMem(const iNode& i);
+        bool FOpen(const pid_t pid, const iNode& i, bool xlock);
 
     protected:
 
