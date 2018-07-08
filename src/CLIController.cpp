@@ -56,7 +56,7 @@ void CLIController::GetLastSeg(char* cmd, int len, char* dirname, int &dncnt)
         if(cmd[i] == '/') break;
         dirname[dncnt++] = cmd[i];
     }
-    dirname[dncnt] = '/0';
+    dirname[dncnt] = '\0';
 }
 
 bool CLIController::GetProcessID(char* cmd, int len, pid_t pid)

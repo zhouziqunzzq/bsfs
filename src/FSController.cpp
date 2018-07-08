@@ -686,3 +686,27 @@ bool FSController::DeleteFile(const iNode& cur)
     // Recycle iNode block
     return this->ifbc.Recycle(cur.bid);
 }
+
+bool FSController::DeleteDir(const iNode& cur)
+{
+    // TODO
+    return true;
+}
+
+bool FSController::ChangeMode(const iNode& cur, char mode)
+{
+    // TODO
+    return true;
+}
+
+bool FSController::Copy(const iNode& src, const iNode& des, char* name)
+{
+    // TODO
+    return true;
+}
+
+bool FSController::Move(const iNode& src, const iNode& des, char* name)
+{
+    // TODO
+    return true;
+}

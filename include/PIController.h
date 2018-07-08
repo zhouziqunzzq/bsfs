@@ -3,6 +3,7 @@
 
 #include "iNodeMem.h"
 #include "Process.h"
+#include "BSFSParams.h"
 
 class PIController
 {
@@ -16,7 +17,7 @@ class PIController
     protected:
 
     private:
-        iNodeMem ilist[MAX_iNODE_CNT];
+        iNodeMem ilist[MAX_INODE_CNT];
         Process plist[MAX_PROCESS_CNT];
         pid_t pidp = 0;
 };
