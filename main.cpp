@@ -15,10 +15,14 @@ int main()
 
     FSController fsc(vhdc);
     TestFSController(fsc);
+    /*TestGLP(fsc);
     TestGetBIDByFOff(fsc);
     TestReadFileToBuf(fsc);
     TestAppendBlocksToFile(fsc);
     TestWriteFileFromBuf(fsc);
+    TestCreateRootDir(fsc);
+    TestCreateSubDir(fsc);*/
+    TestParsePath(fsc);
 
     return 0;
 }

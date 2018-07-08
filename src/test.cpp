@@ -56,7 +56,10 @@ void TestFSController(FSController& fsc)
         else
             cout << "Format successful" << endl;
     }
+}
 
+void TestGLP(FSController& fsc)
+{
     // Test GLP Distribute
     cout << "================Test GLP Distribute=================" << endl;
     bid_t bid;
@@ -236,4 +239,48 @@ void TestWriteFileFromBuf(FSController &fsc)
     cout << "testiNode.mtime: " << testiNode.mtime << endl;
     for (i = 0; i < 12; i++)
         cout << "testiNode.data[" << i << "]: " << testiNode.data[i] << endl;
+}
+
+void TestCreateRootDir(FSController& fsc)
+{
+    cout << "================Test CreateRootDir=================" << endl;
+    if (!fsc.CreateRootDir())
+        cout << "Failed to Create /" << endl;
+    else
+        cout << "/ Created" << endl;
+    iNode rootiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    cout << "rootiNode.size: " << rootiNode.size << endl;
+    for (int i = 0; i < 12; i++)
+        cout << "rootiNode.data[" << i << "]: " << rootiNode.data[i] << endl;
+}
+
+void TestCreateSubDir(FSController& fsc)
+{
+    cout << "================Test CreateSubDir=================" << endl;
+    iNode rootiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    char dirname[] = "home";
+    if (!fsc.CreateSubDir(rootiNode, dirname, OWNER_ALLFLAG | PUBLIC_ALLFLAG, ROOT_UID))
+        cout << "Failed to Create /home" << endl;
+    else
+        cout << "/home Created" << endl;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    cout << "rootiNode.size: " << rootiNode.size << endl;
+    for (int i = 0; i < 12; i++)
+        cout << "rootiNode.data[" << i << "]: " << rootiNode.data[i] << endl;
+}
+
+void TestParsePath(FSController& fsc)
+{
+    cout << "================Test ParsePath=================" << endl;
+    char path[MAX_CMD_LEN] = "/home/../../../../../../home";
+    iNode rootiNode;
+    iNode rstiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &rstiNode))
+        cout << "Failed to parse " << path << endl;
+    else
+        cout << "Parse " << path << " complete" << endl;
+    cout << rstiNode.name << endl;
 }

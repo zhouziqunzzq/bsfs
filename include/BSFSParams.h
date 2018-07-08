@@ -31,7 +31,6 @@ typedef unsigned short ibid_t;
 #define INDIR1_BLOCK_CNT (BLOCKSIZE) / sizeof(bid_t)
 #define INDIR2_BLOCK_CNT ((BLOCKSIZE) * (BLOCKSIZE)) / (sizeof(bid_t) * sizeof(bid_t))
 #define MAX_BLOCK_CNT (DIRECT_BLOCK_CNT + INDIR1_BLOCK_CNT + INDIR2_BLOCK_CNT -1 - (BLOCKSIZE / sizeof(bid_t)))
-#define ROOT_INODE iNODEBLOCK_MIN
 // SFD
 #define FILENAME_MAXLEN 30
 // File Mode
@@ -43,6 +42,8 @@ typedef unsigned short ibid_t;
 #define PUBLIC_WFLAG 1<<2
 #define PUBLIC_XFLAG 1<<1
 #define SYNLINKFLAG 1
+#define OWNER_ALLFLAG (OWNER_RFLAG | OWNER_WFLAG | OWNER_XFLAG)
+#define PUBLIC_ALLFLAG (PUBLIC_RFLAG | PUBLIC_WFLAG | PUBLIC_XFLAG)
 // User
 #define ROOT_UID 1
 #define MAX_UNAME_LEN 32
@@ -51,7 +52,7 @@ typedef unsigned short ibid_t;
 // Other
 #define WELCOMEMSG "Booting BSFS..."
 #define MAXFOLLOWLINK 40
-#define HOSTNAME ""
+#define HOSTNAME "yukiyukiyu"
 
 #endif // BSFSPARAMS_H_INCLUDED
 

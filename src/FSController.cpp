@@ -41,6 +41,17 @@ bool FSController::Format()
         if(!ifbc.Recycle(i)) return false;
     if(!ifbc.SaveSuperBlock()) return false;
 
+    // Create /
+    if (!this->CreateRootDir()) return false;
+
+    // Create /home
+    iNode rootiNode;
+    char homeName[] = "home";
+    if (!this->GetiNodeByID(ROOTDIRiNODE, &rootiNode)) return false;
+    if (!this->CreateSubDir(rootiNode, homeName,
+        OWNER_ALLFLAG | PUBLIC_RFLAG | PUBLIC_XFLAG, ROOT_UID))
+        return false;
+
     return true;
 }
 
@@ -216,7 +227,7 @@ bool FSController::AppendBlocksToFile(iNode& cur, int blockCnt)
     }
     // Update iNode
     cur.blocks += blockCnt;
-    if (!this->vhdc.WriteBlock(cur.bid, (char*)&cur, sizeof(iNode))) return false;
+    if (!this->SaveiNodeByID(cur.bid, cur)) return false;
     return true;
 }
 
@@ -280,8 +291,8 @@ bool FSController::WriteFileFromBuf(iNode& cur, int start, int len, char* buf)
     {
         cur.size = start + len;
         cur.bytes = (start + len) % BLOCKSIZE;
-        if (!this->vhdc.WriteBlock(cur.bid, (char*)&cur, sizeof(iNode))) return false;
     }
+    if (!this->SaveiNodeByID(cur.bid, cur)) return false;
     return true;
 }
 
@@ -314,7 +325,7 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
     int pp = 0, totLinkCnt = 0;
     if(path[0] == '/')
     {
-        if(!vhdc.ReadBlock(ROOTDIRiNODE, (char*)&nowiNode, sizeof(iNode)))
+        if (!this->GetiNodeByID(ROOTDIRiNODE, &nowiNode))
             return false;
         pp++;
     }
@@ -416,6 +427,8 @@ bool FSController::InitDirSFDList(iNode& cur, bid_t parentBid)
     strcpy(sfdList[1].name, "..");
     sfdList[1].inode = parentBid;
 
+    this->WriteFileFromBuf(cur, 0, sizeof(SFD) * 2, (char*)&sfdList);
+
     return this->WriteFileFromBuf(cur, 0, sizeof(SFD) * 2, (char*)&sfdList);
 }
 
@@ -434,10 +447,11 @@ bool FSController::CreateRootDir()
     rootiNode.atime = rootiNode.mtime = time(nullptr);
     rootiNode.blocks = 0;
     rootiNode.bytes = 0;
-    if (!this->vhdc.WriteBlock(ROOT_INODE, (char*)&rootiNode, sizeof(iNode)))
-        return false;
     // Create RootDir SFD List
     if (!this->InitDirSFDList(rootiNode, ROOTDIRiNODE))
+        return false;
+    // Save RootDir iNode
+    if (!this->SaveiNodeByID(ROOTDIRiNODE, rootiNode))
         return false;
     return true;
 }
@@ -475,7 +489,7 @@ bool FSController::TouchFile(iNode& curDir, char* name, char mode, int ownerUid,
     newiNode.blocks = 0;
     newiNode.bytes = 0;
     // Save new iNode
-    if (!this->vhdc.WriteBlock(newiNode.bid, (char*)&newiNode, sizeof(iNode)))
+    if (!this->SaveiNodeByID(newiNode.bid, newiNode))
     {
         delete[] dir;
         return false;
@@ -500,12 +514,19 @@ bool FSController::CreateSubDir(iNode& curDir, char* name, char mode, int ownerU
     iNode newiNode;
     if (!this->TouchFile(curDir, name, mode | DIRFLAG, ownerUid, &newiNode))
         return false;
-    return this->InitDirSFDList(newiNode, curDir.bid);
+    if (!this->InitDirSFDList(newiNode, curDir.bid))
+        return false;
+    return this->SaveiNodeByID(curDir.bid, curDir);
 }
 
 bool FSController::GetiNodeByID(bid_t id, iNode* rst)
 {
     return this->vhdc.ReadBlock(id, (char*)rst, sizeof(iNode));
+}
+
+bool FSController::SaveiNodeByID(bid_t id, const iNode& inode)
+{
+    return this->vhdc.WriteBlock(id, (char*)&inode, sizeof(iNode));
 }
 
 void FSController::GetAbsDir(const iNode& cur, char* dir)

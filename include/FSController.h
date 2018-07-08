@@ -24,6 +24,7 @@ class FSController
         bool AppendBlocksToFile(iNode& cur, int blockCnt);
         bool WriteFileFromBuf(iNode& cur, int start, int len, char* buf);
         bool GetiNodeByID(bid_t id, iNode* rst);
+        bool SaveiNodeByID(bid_t id, const iNode& inode);
         void GetAbsDir(const iNode& cur, char* dir);
         // Directory operation
         bool GetContentInDir(const iNode& curDir, SFD* rst);
