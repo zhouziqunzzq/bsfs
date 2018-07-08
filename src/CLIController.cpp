@@ -8,6 +8,7 @@
 #include "FSController.h"
 #include "iNode.h"
 #include "UserController.h"
+#include "PIController.h"
 
 using namespace std;
 
@@ -43,6 +44,30 @@ void CLIController::DisplayMode(const char mode, char* rst)
     if(mode & SYNLINKFLAG) rst[7] = 's';
 }
 
+void CLIController::GetLastSeg(char* cmd, int len, char* dirname, int &dncnt)
+{
+    if(cmd[len-1] == '/')
+    {
+        while(cmd[len-1] == '/') len--;
+    }
+    for(int i = len-1; i >= 0; i--)
+    {
+        if(cmd[i] == '/') break;
+        dirname[dncnt++] = cmd[i];
+    }
+    dirname[dncnt] = '/0';
+}
+
+bool CLIController::GetProcessID(char* cmd, int len, pid_t pid)
+{
+    for(int i = 0; i < len; i++)
+    {
+        if(cmd[i] < '0' && cmd[i] > '9') return false;
+        pid += cmd[i]-'0';
+    }
+    return true;
+}
+
 bool CLIController::ReadCommand()
 {
     char c, tmp[MAX_CMD_LEN];
@@ -54,14 +79,18 @@ bool CLIController::ReadCommand()
         if(c == ' ' && lentmp == 0) continue;
         tmp[lentmp++] = c;
     }
+    if(lentmp == 0)
+        if(!MakeMenu()) return false;
+    if(tmp[lentmp-1] != ' ') tmp[lentmp++] = ' ';
 
     char cmd[5][MAX_CMD_LEN];
+    memset(cmd, 0, sizseof(cmd));
     int len[5] = {0}, cmdp = 1;
     for(int i = 0; i < lentmp; i++)
     {
         if(tmp[i] == ' ')
         {
-            cmd[cmdp][len[cmdp]++] = '\0';
+            cmd[cmdp][len[cmdp]] = '\0';
             cmdp++;
             continue;
         }
@@ -106,7 +135,6 @@ bool CLIController::ReadCommand()
 
         iNode rst;
         char moderst[8];
-        for(int i = 0; i < 8; i++) moderst[i] = '-';
         char uname[MAX_UNAME_LEN];
         unsigned int totSize = 0;
 
@@ -114,41 +142,179 @@ bool CLIController::ReadCommand()
         {
             if(this->fsc.GetiNodeByID(DirSet[i].inode, &rst))
             {
+                for(int i = 0; i < 8; i++) moderst[i] = '-';
+                DisplayMode(rst.mode, moderst);
                 for(int j = 0; j < 8; j++) cout << moderst[i];
                 cout << " ";
+
                 cout << rst.nlink << " ";
+
                 if(!this->uc.GetUsernameByUid(rst.uid, uname))
                     return false;
                 else cout << uname << " ";
+
                 cout << rst.size << " ";
                 totSize += rst.size;
+
                 tm* t = localtime(&rst.mtime);
                 cout << month[t->tm_mon] << " ";
                 cout << t->tm_mday << " ";
                 cout << t->tm_hour << ":" << t->tm_min << " ";
+
                 cout << DirSet[i].name << endl;
             }
         }
-        cout << "total" << totSize << endl;
+        cout << "total " << totSize << endl;
     }
     if(strcmp(cmd[1], "cd") == 0)
-    {}
+    {
+        if(len[2] == 0)
+        {
+            cmd[2][len[2]++] = '.';
+            cmd[2][len[2]++] = '\0';
+        }
+        if(len[3] != 0) return false;
+
+        iNode rst;
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, rst))
+            return false;
+        if(!(rst.mode & DIRFLAG)) return false;
+
+        memcpy((char*)&nowiNode, (char*)&rst, sizeof(iNode));
+    }
     if(strcmp(cmd[1], "openr") == 0)
-    {}
+    {
+        if(len[3] == 0) return false;
+        pid_t pid = 0;
+        if(!GetProcessID(cmd[3], len[3], pid))
+            return false;
+
+        iNode rst;
+        if(!fsc.ParsePath(nowiNode, cmd[2], true, rst))
+            return false;
+        if(rst.mode & DIRFLAG) return false;
+        if(!pic.CheckXlock(rst.bid)) return false;
+
+        pic.FOpen(pid, rst, false);
+    }
     if(strcmp(cmd[1], "openw") == 0)
-    {}
+    {
+        if(len[3] == 0) return false;
+        pid_t pid = 0;
+        if(!GetProcessID(cmd[3], len[3], pid))
+            return false;
+
+        iNode rst;
+        if(!fsc.ParsePath(nowiNode, cmd[2], true, rst))
+            return false;
+        if(rst.mode & DIRFLAG) return false;
+        if(!pic.CheckXlock(rst.bid)) return false;
+
+        pic.FOpen(pid, rst, true);
+    }
     if(strcmp(cmd[1], "mkdir") == 0)
-    {}
+    {
+        if(len[2] == 0 || len[3] != 0) return false;
+
+        iNode rst;
+        if(!fsc.ParsePath(nowiNode, cmd[2], false, rst))
+            return false;
+
+        char dirname[FILENAME_MAXLEN];
+        int dncnt = 0;
+        GetLastSeg(cmd[2], len[2], dirname, dncnt);
+        if(!fsc.CreateSubDir(rst, dirname, DIR_DEFAULT_FLAG, uid))
+            return false;
+    }
     if(strcmp(cmd[1], "vim") == 0)
     {}
     if(strcmp(cmd[1], "rm") == 0)
-    {}
-    if(strcmp(cmd[1], "chmod") == 0)
-    {}
-    if(strcmp(cmd[1], "cp") == 0)
-    {}
-    if(strcmp(cmd[1], "mv") == 0)
-    {}
+    {
+        if(len[2] == 0) return false;
+        if((len[3] != 0) && (strcmp(cmd[2], "-r") != 0)) return false;
 
+        iNode rst;
+        if(len[3] == 0)
+        {
+            if(!fsc.ParsePath(nowiNode, cmd[2], true, rst))
+                return false;
+            if(rst.mode & DIRFLAG) return false;
+
+            if(!fsc.DeleteFile(rst))
+                return false;
+        }
+        else
+        {
+            if(!fsc.ParsePath(nowiNode, cmd[3], true, rst))
+                return false;
+            if(!(rst.mode & DIRFLAG)) return false;
+
+            if(!fsc.DeleteDir(rst))
+                return false;
+        }
+    }
+    if(strcmp(cmd[1], "chmod") == 0)
+    {
+        if(len[3] == 0) return false;
+        if(len[2] != 2) return false;
+        for(int i = 0; i < len[2]; i++)
+        {
+            if(cmd[2][i] < '0' || cmd[2][i] > '9') return false;
+        }
+
+        iNode rst;
+        int mode;
+        if(!fsc.ParsePath(nowiNode, cmd[3], true, rst))
+            return false;
+        mode = ((cmd[2][0]-'0') << 4) | ((cmd[2][1]-'0') << 1) | (rst.mode);
+        if(!ChangeMode(rst, (char)mode))
+            return false;
+    }
+    if(strcmp(cmd[1], "cp") == 0)
+    {
+        if(len[3] == 0) return false;
+
+        iNode srciNode, desiNode;
+        if(!fsc.ParsePath(nowiNode, cmd[2], true, srciNode))
+            return false;
+        char newname[FILENAME_MAXLEN];
+        int newlen = 0;
+        if(!fsc.ParsePath(nowiNode, cmd[3], true, desiNode))
+        {
+            if(!fsc.ParsePath(nowiNode, cmd[3], false, desiNode))
+                return false;
+            GetLastSeg(cmd[3], len[3], newname, newlen);
+        }
+        else
+            strcpy(newname, srciNode.name);
+
+        if(!(desiNode & DIRFLAG)) return false;
+        if(!fsc.Copy(srciNode, desiNode, newname))
+            return false;
+    }
+    if(strcmp(cmd[1], "mv") == 0)
+    {
+        if(len[3] == 0) return false;
+
+        iNode srciNode, desiNode;
+        if(!fsc.ParsePath(nowiNode, cmd[2], true, srciNode))
+            return false;
+        char newname[FILENAME_MAXLEN];
+        int newlen = 0;
+        if(!fsc.ParsePath(nowiNode, cmd[3], true, desiNode))
+        {
+            if(!fsc.ParsePath(nowiNode, cmd[3], false, desiNode))
+                return false;
+            GetLastSeg(cmd[3], len[3], newname, newlen);
+        }
+        else
+            strcpy(newname, srciNode.name);
+
+        if(!(desiNode & DIRFLAG)) return false;
+        if(!fsc.Move(srciNode, desiNode, newname))
+            return false;
+    }
+
+    if(!MakeMenu()) return false;
     return true;
 }
