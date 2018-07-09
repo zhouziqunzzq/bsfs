@@ -23,13 +23,15 @@ int main()
     TestCreateRootDir(fsc);
     TestCreateSubDir(fsc);
     TestParsePath(fsc);
-    TestGetAbsDir(fsc);
+    TestGetAbsDir(fsc);*/
     TestTouch(fsc);
     TestGetContentInDir(fsc);
     TestWriteFileFromBuf2(fsc);
-    TestDeleteFile(fsc);
+    /*TestDeleteFile(fsc);
     TestGetContentInDir(fsc);
     TestDeleteDir(fsc);*/
+    TestCopyFile(fsc);
+    TestGetContentInDir(fsc);
 
     return 0;
 }

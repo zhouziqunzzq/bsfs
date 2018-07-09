@@ -446,3 +446,51 @@ void TestDeleteDir(FSController& fsc)
         delete[] SFDList;
     }
 }
+
+void TestCopyFile(FSController& fsc)
+{
+    cout << "================Test CopyFile=================" << endl;
+    char path[MAX_CMD_LEN] = "/home/1.txt";
+    iNode rootiNode;
+    iNode txtiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &txtiNode))
+    {
+        cout << "Failed to parse " << path << endl;
+        return;
+    }
+
+    char targetPath[MAX_CMD_LEN] = "/home";
+    iNode homeiNode;
+    if (!fsc.ParsePath(rootiNode, targetPath, true, &homeiNode))
+    {
+        cout << "Failed to parse " << targetPath << endl;
+        return;
+    }
+
+    char newName[FILENAME_MAXLEN] = "2.txt";
+    if (!fsc.Copy(txtiNode, homeiNode, newName, ROOT_UID))
+    {
+        cout << "Failed to copy" << endl;
+    }
+    else
+    {
+        cout << "Copy from " << path << " to " << newName << " success" << endl;
+    }
+}
+
+void TestCopyDir(FSController& fsc)
+{
+    cout << "================Test CopyFile=================" << endl;
+    char path[MAX_CMD_LEN] = "/home/";
+    iNode rootiNode;
+    iNode homeiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &homeiNode))
+    {
+        cout << "Failed to parse " << path << endl;
+        return;
+    }
+
+    //
+}

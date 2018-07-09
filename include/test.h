@@ -21,5 +21,7 @@ void TestGetContentInDir(FSController& fsc);
 void TestWriteFileFromBuf2(FSController& fsc);
 void TestDeleteFile(FSController& fsc);
 void TestDeleteDir(FSController& fsc);
+void TestCopyFile(FSController& fsc);
+void TestCopyDir(FSController& fsc);
 
 #endif // TEST_H_INCLUDED

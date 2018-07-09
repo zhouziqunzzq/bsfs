@@ -428,8 +428,6 @@ bool FSController::InitDirSFDList(iNode& cur, bid_t parentBid)
     strcpy(sfdList[1].name, DOTDOT);
     sfdList[1].inode = parentBid;
 
-    this->WriteFileFromBuf(cur, 0, sizeof(SFD) * 2, (char*)&sfdList);
-
     return this->WriteFileFromBuf(cur, 0, sizeof(SFD) * 2, (char*)&sfdList);
 }
 
@@ -788,7 +786,19 @@ bool FSController::CopyFile(const iNode& src, iNode& des, char* name, int uid)
 
 bool FSController::CopyDir(const iNode& src, iNode& des, char* name, int uid)
 {
-    // TODO
+    // Create subdir
+    if (!this->CreateSubDir(des, name, src.mode, uid))
+        return false;
+    // Readin SFD List
+    SFD* SFDList = new SFD[src.size / sizeof(SFD)];
+    if (!GetContentInDir(src, SFDList))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    // Iterate over srcdir
+
+
     return true;
 }
 
@@ -806,13 +816,13 @@ bool FSController::Move(const iNode& src, iNode& des, char* name)
     return true;
 }
 
-bool LinkH(iNode& src, iNode& des, char* name)
+bool FSController::LinkH(iNode& src, iNode& des, char* name)
 {
     // TODO
     return true;
 }
 
-bool LinkS(char* src, iNode& des, char* name)
+bool FSController::LinkS(char* src, iNode& des, char* name)
 {
     // TODO
     return true;
