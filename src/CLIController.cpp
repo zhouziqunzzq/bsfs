@@ -317,7 +317,43 @@ bool CLIController::ReadCommand()
         if(!this->fsc.Move(srciNode, desiNode, newname))
             return false;
     }
+    if(strcmp(cmd[1], "lnh") == 0)
+    {
+        if(len[3] == 0) return false;
 
-    if(!MakeMenu()) return false;
+        iNode srciNode, desiNode;
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode))
+            return false;
+        char linkname[FILENAME_MAXLEN];
+        int linklen = 0;
+        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode))
+        {
+            if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode))
+                return false;
+            GetLastSeg(cmd[3], len[3], linkname, linklen);
+        }
+        else strcpy(linkname, srciNode.name);
+
+        if(!this->fsc.LinkH(srciNode, desiNode, linkname))
+            return false;
+    }
+    if(strcmp(cmd[1], "lns") == 0)
+    {
+        if(len[3] == 0) return false;
+
+        iNode desiNode;
+        char linkname[FILENAME_MAXLEN];
+        int linklen = 0;
+        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode))
+        {
+            if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode))
+                return false;
+        }
+        GetLastSeg(cmd[3], len[3], linkname, linklen);
+
+        if(!this->fsc.LinkS(cmd[2], desiNode, linkname))
+            return false;
+    }
+
     return true;
 }
