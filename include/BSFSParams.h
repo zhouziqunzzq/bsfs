@@ -52,10 +52,11 @@ typedef unsigned short ibid_t;
 #define MAX_UNAME_LEN 32
 // CLI
 #define MAX_CMD_LEN 1024
+#define LS_PADDING 5
 // Process
 #define MAX_OPEN_CNT_P 128
 #define MAX_OPEN_CNT_F 128
-#define MAX_PROCESS_CNT 65535
+#define MAX_PROCESS_CNT 128
 // Other
 #define WELCOMEMSG "Booting BSFS..."
 #define MAXFOLLOWLINK 40
