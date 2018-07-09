@@ -22,10 +22,11 @@ class FSController
         bool Copy(const iNode& src, iNode& des, char* name, int uid);
         bool Move(iNode& src, iNode& des, char* name);
         bool LinkH(iNode& src, iNode& des, char* name);
-        bool LinkS(char* src, iNode& des, char* name);
+        bool LinkS(char* src, iNode& des, char* name, int uid);
         bool ChangeMode(iNode& cur, char mode);
         void GetAbsDir(const iNode& cur, char* dir);
-        bool ParsePath(const iNode& curDir, char* path, bool last, iNode* rst);
+        bool ParsePath(const iNode& curDir, char* path,
+                             bool last, iNode* rst, bool followLastSyn = true);
         bool Touch(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst);
         // iNode operation
         bool GetiNodeByID(bid_t id, iNode* rst);

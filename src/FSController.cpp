@@ -321,7 +321,9 @@ bool FSController::FindContentInDir(const SFD* DirSet, const int len, const char
 // curDir: current directory
 // path: path to parse
 // last: whether parse to the last level of path or not
-bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* rst)
+// followLastSyn: whether follow the last level of synlink or not
+bool FSController::ParsePath(const iNode& curDir, char* path,
+                             bool last, iNode* rst, bool followLastSyn)
 {
     iNode nowiNode, tmpiNode;
     int pp = 0, totLinkCnt = 0;
@@ -362,22 +364,20 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
         }
         if(FindContentInDir(DirSet, subDirnum, buf, &target))
         {
-            if(!vhdc.ReadBlock(DirSet[target].inode, (char*)&tmpiNode, sizeof(iNode)))
+            if (!this->GetiNodeByID(DirSet[target].inode, &tmpiNode))
             {
                 delete[] DirSet;
                 return false;
             }
-            // If the last level of the path is a file -> true
-            // else -> false
-            if(!(tmpiNode.mode & DIRFLAG) && (path[pp] != '\0'))
-                return false;
-            // Follow symbolic link
-            if(tmpiNode.mode & SYNLINKFLAG)
+            // Follow symbolic link unless reach last level
+            if((tmpiNode.mode & SYNLINKFLAG) && (
+                (path[pp] != '\0') || followLastSyn))
             {
                 totLinkCnt++;
                 if(totLinkCnt > MAXFOLLOWLINK) return false;
 
-                char* synlink = new char[tmpiNode.size];
+                char* synlink = new char[tmpiNode.size + 1];
+                synlink[tmpiNode.size] = '\0';
                 if(!ReadFileToBuf(tmpiNode, 0, tmpiNode.size, synlink))
                 {
                     delete[] synlink;
@@ -394,9 +394,10 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
                 int len = strlen(path);
                 char* newpath = new char[len + tmpiNode.size + 10];
                 int newlen = 0;
-                for(int i = 0; i < len; i++)
+                for(int i = 0; i <= len; i++)
                 {
-                    newpath[newlen++] = path[i];
+                    if (path[i] != '\0')
+                        newpath[newlen++] = path[i];
                     if(i == pp)
                     {
                         for(int j = 0;  j < (int)tmpiNode.size; j++)
@@ -404,15 +405,26 @@ bool FSController::ParsePath(const iNode& curDir, char* path, bool last, iNode* 
                         newpath[newlen++] = '/';
                     }
                 }
+                newpath[newlen] = '\0';
                 strcpy(path, newpath);
-                path[newlen++] = '\0';
+                path[newlen] = '\0';
+
                 delete[] synlink;
                 delete[] newpath;
                 continue;
             }
+            // If the last level of the path is a file -> true
+            // else -> false
+            if(!(tmpiNode.mode & DIRFLAG) && (path[pp] != '\0'))
+                return false;
             memcpy((char*)&nowiNode, (char*)&tmpiNode, sizeof(iNode));
         }
-        else return false;
+        else
+        {
+            delete[] DirSet;
+            return false;
+        }
+        delete[] DirSet;
     }
 
     memcpy((char*)rst, (char*)&nowiNode, sizeof(iNode));
@@ -934,8 +946,14 @@ bool FSController::LinkH(iNode& src, iNode& des, char* name)    // Fake
     return true;
 }
 
-bool FSController::LinkS(char* src, iNode& des, char* name)
+bool FSController::LinkS(char* src, iNode& des, char* name, int uid)
 {
-    // TODO
+    // Touch new file
+    iNode newiNode;
+    if (!this->Touch(des, name, FILE_DEFAULT_FLAG | SYNLINKFLAG, uid, &newiNode))
+        return false;
+    // Write synlink
+    if (!this->WriteFileFromBuf(newiNode, 0, strlen(src), src))
+        return false;
     return true;
 }

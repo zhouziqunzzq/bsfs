@@ -70,7 +70,7 @@ bool CLIController::GetProcessID(char* cmd, int len, pid_t pid)
     for(int i = 0; i < len; i++)
     {
         if(cmd[i] < '0' && cmd[i] > '9') return false;
-        pid += cmd[i]-'0';
+        pid = pid * 10 + cmd[i]-'0';
     }
     return true;
 }
@@ -247,7 +247,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         iNode rst;
         if(len[3] == 0)
         {
-            if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
+            if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst, false))
                 return false;
             if(rst.mode & DIRFLAG) return false;
 
@@ -291,9 +291,9 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         char newname[FILENAME_MAXLEN];
         int newlen = 0;
-        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode))
+        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode, false))
         {
-            if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode))
+            if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode, false))
                 return false;
             GetLastSeg(cmd[3], len[3], newname, newlen);
         }
@@ -309,13 +309,13 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(len[3] == 0) return false;
 
         iNode srciNode, desiNode;
-        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode, false))
             return false;
         char newname[FILENAME_MAXLEN];
         int newlen = 0;
-        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode))
+        if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode, false))
         {
-            if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode))
+            if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode, false))
                 return false;
             GetLastSeg(cmd[3], len[3], newname, newlen);
         }
@@ -331,9 +331,9 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(len[3] != 0) return false;
 
         iNode rst;
-        if(this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
+        if(this->fsc.ParsePath(nowiNode, cmd[2], true, &rst, false))
             return false;
-        if(!this->fsc.ParsePath(nowiNode, cmd[2], false, &rst))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], false, &rst, false))
             return false;
 
         char newname[FILENAME_MAXLEN];
@@ -348,7 +348,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(len[3] == 0) return false;
 
         iNode srciNode, desiNode;
-        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode, false))
             return false;
         char linkname[FILENAME_MAXLEN];
         int linklen = 0;
@@ -377,7 +377,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         }
         GetLastSeg(cmd[3], len[3], linkname, linklen);
 
-        if(!this->fsc.LinkS(cmd[2], desiNode, linkname))
+        if(!this->fsc.LinkS(cmd[2], desiNode, linkname, this->uid))
             return false;
     }
     if(strcmp(cmd[1], "exit") == 0)
