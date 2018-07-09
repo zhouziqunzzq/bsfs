@@ -500,6 +500,7 @@ bool FSController::Touch(iNode& curDir, char* name, char mode, int ownerUid, iNo
     newSFD.inode = newiNode.bid;
     if (!this->WriteFileFromBuf(curDir, curDir.size, sizeof(SFD), (char*)&newSFD))
     {
+        cout << "!!!" << endl;
         delete[] dir;
         return false;
     }
@@ -530,6 +531,12 @@ bool FSController::SaveiNodeByID(bid_t id, const iNode& inode)
 
 void FSController::GetAbsDir(const iNode& cur, char* dir)
 {
+    char rootName[] = "/";
+    if (strcmp(cur.name, rootName) == 0)
+    {
+        strcpy(dir, rootName);
+        return;
+    }
     string ts;
     iNode now;
     memcpy((char*)&now, (char*)&cur, sizeof(iNode));
