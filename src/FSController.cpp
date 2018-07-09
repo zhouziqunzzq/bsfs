@@ -716,11 +716,12 @@ bool FSController::DeleteFile(const iNode& cur)
                 this->DeleteIndir2Blocks(cur))
                 return false;
         }
-        // Recycle iNode block
-        if (!this->ifbc.Recycle(cur.bid)) return false;
     }
     // Delete SFD in parent
-    return this->DeleteSFDEntry(cur);
+    if (!this->DeleteSFDEntry(cur)) return false;
+    // Recycle iNode block
+    if (!this->ifbc.Recycle(cur.bid)) return false;
+    return true;
 }
 
 bool FSController::DeleteDir(const iNode& cur)
@@ -910,16 +911,27 @@ bool FSController::Move(iNode& src, iNode& des, char* name)
     return true;
 }
 
-bool FSController::LinkH(iNode& src, iNode& des, char* name)
+bool FSController::LinkH(iNode& src, iNode& des, char* name)    // Fake
 {
+    // Only for regular file
+    if (src.mode & DIRFLAG) return false;
     // Update src iNode
     src.nlink++;
     if (!this->SaveiNodeByID(src.bid, src)) return false;
-    // Append new SFD in des
-    SFD newSFD;
-    strcpy(newSFD.name, name);
-    newSFD.inode = src.bid;
-    return this->AppendSFDEntry(des, newSFD);
+    // Touch new file
+    iNode newiNode;
+    if (!this->Touch(des, name, src.mode, src.uid, &newiNode))
+        return false;
+    // Copy iNode info
+    newiNode.size = src.size;
+    newiNode.mtime = src.mtime;
+    newiNode.atime = src.atime;
+    newiNode.blocks = src.blocks;
+    newiNode.bytes = src.bytes;
+    memcpy(newiNode.data, src.data, INODE_DATASIZE);
+    // Save iNode
+    if (!this->SaveiNodeByID(newiNode.bid, newiNode)) return false;
+    return true;
 }
 
 bool FSController::LinkS(char* src, iNode& des, char* name)
