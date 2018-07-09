@@ -47,6 +47,7 @@
 		<Unit filename="include/Process.h" />
 		<Unit filename="include/SFD.h" />
 		<Unit filename="include/SuperBlock.h" />
+		<Unit filename="include/User.h" />
 		<Unit filename="include/UserController.h" />
 		<Unit filename="include/VHDController.h" />
 		<Unit filename="include/iNode.h" />

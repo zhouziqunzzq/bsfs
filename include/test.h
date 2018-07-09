@@ -4,6 +4,7 @@
 #include "VHDController.h"
 #include "FSController.h"
 
+void TestAll(VHDController& vhdc, FSController& fsc);
 void TestVHDController(VHDController& vhdc);
 void TestFSController(FSController& fsc);
 void TestGLP(FSController& fsc);
@@ -22,6 +23,5 @@ void TestWriteFileFromBuf2(FSController& fsc);
 void TestDeleteFile(FSController& fsc);
 void TestDeleteDir(FSController& fsc);
 void TestCopyFile(FSController& fsc);
-void TestCopyDir(FSController& fsc);
 
 #endif // TEST_H_INCLUDED

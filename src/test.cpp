@@ -8,6 +8,29 @@
 
 using namespace std;
 
+void TestAll(VHDController& vhdc, FSController& fsc)
+{
+    TestVHDController(vhdc);
+    TestFSController(fsc);
+    TestGLP(fsc);
+    TestGetBIDByFOff(fsc);
+    TestReadFileToBuf(fsc);
+    TestAppendBlocksToFile(fsc);
+    TestWriteFileFromBuf(fsc);
+    TestCreateRootDir(fsc);
+    TestCreateSubDir(fsc);
+    TestParsePath(fsc);
+    TestGetAbsDir(fsc);
+    TestTouch(fsc);
+    TestGetContentInDir(fsc);
+    TestWriteFileFromBuf2(fsc);
+    TestDeleteFile(fsc);
+    TestGetContentInDir(fsc);
+    TestDeleteDir(fsc);
+    TestCopyFile(fsc);
+    TestGetContentInDir(fsc);
+}
+
 void TestVHDController(VHDController& vhdc)
 {
     cout << "================Test VHDController=================" << endl;
@@ -325,7 +348,7 @@ void TestTouch(FSController& fsc)
     // Touch /home/1.txt
     char fname[] = "1.txt";
     iNode rstiNode;
-    if (!fsc.Touch(homeiNode, fname, FILE_DEFAULT_FLAG, ROOTDIRiNODE, &rstiNode))
+    if (!fsc.Touch(homeiNode, fname, FILE_DEFAULT_FLAG, ROOT_UID, &rstiNode))
     {
         cout << "Failed to touch " << fname << endl;
     }
@@ -478,20 +501,4 @@ void TestCopyFile(FSController& fsc)
     {
         cout << "Copy from " << path << " to " << newName << " success" << endl;
     }
-}
-
-void TestCopyDir(FSController& fsc)
-{
-    cout << "================Test CopyFile=================" << endl;
-    char path[MAX_CMD_LEN] = "/home/";
-    iNode rootiNode;
-    iNode homeiNode;
-    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
-    if (!fsc.ParsePath(rootiNode, path, true, &homeiNode))
-    {
-        cout << "Failed to parse " << path << endl;
-        return;
-    }
-
-    //
 }

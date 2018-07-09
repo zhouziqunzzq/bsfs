@@ -28,22 +28,18 @@ bool FSController::Format()
     {
         return false;
     }
-
     // Format Super Block and construct GPL
     fbc.SetFullFlag();
     for(int i = DATABLOCK_MIN; i <= DATABLOCK_MAX; i++)
         if(!fbc.Recycle(i)) return false;
     if(!fbc.SaveSuperBlock()) return false;
-
     // Fomat iNode Super Block and construct GPL
     ifbc.SetFullFlag();
     for(int i = iNODEBLOCK_MIN + 1; i <= iNODEBLOCK_MAX; i++)   // skip iNode of /
         if(!ifbc.Recycle(i)) return false;
     if(!ifbc.SaveSuperBlock()) return false;
-
     // Create /
     if (!this->CreateRootDir()) return false;
-
     // Create /home
     iNode rootiNode;
     char homeName[] = "home";
@@ -52,7 +48,17 @@ bool FSController::Format()
     if (!this->CreateSubDir(rootiNode, homeName,
         OWNER_ALLFLAG | PUBLIC_RFLAG | PUBLIC_XFLAG, ROOT_UID, &homeiNode))
         return false;
-
+    // Create /etc
+    char etcName[] = "etc";
+    iNode etciNode;
+    if (!this->CreateSubDir(rootiNode, etcName,
+        OWNER_ALLFLAG | PUBLIC_RFLAG | PUBLIC_XFLAG, ROOT_UID, &etciNode))
+        return false;
+    // Create USER_FILE
+    char ufName[] = USER_FILENAME;
+    iNode ufiNode;
+    if (!this->Touch(etciNode, ufName, OWNER_ALLFLAG, ROOT_UID, &ufiNode))
+        return false;
     return true;
 }
 
@@ -441,7 +447,7 @@ bool FSController::InitDirSFDList(iNode& cur, bid_t parentBid)
     strcpy(sfdList[1].name, DOTDOT);
     sfdList[1].inode = parentBid;
 
-    return this->WriteFileFromBuf(cur, 0, sizeof(SFD) * 2, (char*)&sfdList);
+    return this->WriteFileFromBuf(cur, 0, sizeof(SFD) * 2, (char*)sfdList);
 }
 
 bool FSController::CreateRootDir()

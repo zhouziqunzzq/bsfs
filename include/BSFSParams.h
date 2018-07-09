@@ -48,8 +48,14 @@ typedef unsigned short ibid_t;
 #define DIR_DEFAULT_FLAG (DIRFLAG | OWNER_ALLFLAG | PUBLIC_RFLAG | PUBLIC_XFLAG)
 #define FILE_DEFAULT_FLAG (OWNER_RFLAG | OWNER_WFLAG | PUBLIC_RFLAG)
 // User
+typedef unsigned int uid_t;
 #define ROOT_UID 1
+#define ROOT_USERNAME "root"
+#define ROOT_DEFAULT_PWD "root"
 #define MAX_UNAME_LEN 32
+#define MAX_PWD_LEN 32
+#define USER_FILENAME "passwd"
+#define USER_FILE_FULLPATH "/etc/passwd"
 // CLI
 #define MAX_CMD_LEN 1024
 #define LS_PADDING 5

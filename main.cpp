@@ -5,23 +5,74 @@
 #include "BSFSParams.h"
 #include "VHDController.h"
 #include "FSController.h"
-
 #include "UserController.h"
 #include "PIController.h"
 #include "CLIController.h"
 
 using namespace std;
 
+void InitVHD(VHDController& vhdc)
+{
+    if (!vhdc.Exists())
+    {
+        cout << "Initializing VHD file " << vhdc.Getfilename() << "...";
+        if (vhdc.Create())
+            cout << "Done" << endl;
+        else
+        {
+            cout << "Error" << endl;
+            exit(-1);
+        }
+
+    }
+    cout << "Loading VHD file " << vhdc.Getfilename() << "...";
+    if (vhdc.Load())
+        cout << "Done" << endl;
+    else
+    {
+        cout << "Error" << endl;
+        exit(-1);
+    }
+}
+
+void InitFS(FSController& fsc)
+{
+    if (!fsc.IsFormat())
+    {
+        cout << "Formatting Filesystem...";
+        if (fsc.Format())
+            cout << "Done" << endl;
+        else
+        {
+            cout << "Error" << endl;
+            exit(-2);
+        }
+    }
+}
+
+void InitUser(UserController& uc)
+{
+    cout << "Loading User...";
+    if (uc.InitLoadUserFile())
+        cout << "Done" << endl;
+    else
+    {
+        cout << "Error" << endl;
+        exit(-3);
+    }
+}
+
 int main()
 {
     VHDController vhdc;
-    TestVHDController(vhdc);
+    InitVHD(vhdc);
 
     FSController fsc(vhdc);
-    TestFSController(fsc);
+    InitFS(fsc);
 
+    UserController uc(fsc);
+    InitUser(uc);
 
-    UserController uc;
     PIController pic;
     iNode nowiNode;
     if(!fsc.GetiNodeByID(ROOTDIRiNODE, &nowiNode))
@@ -38,24 +89,6 @@ int main()
         cli.ReadCommand(flag);
         if(flag) break;
     }
-
-    /*TestGLP(fsc);
-    TestGetBIDByFOff(fsc);
-    TestReadFileToBuf(fsc);
-    TestAppendBlocksToFile(fsc);
-    TestWriteFileFromBuf(fsc);
-    TestCreateRootDir(fsc);
-    TestCreateSubDir(fsc);
-    TestParsePath(fsc);
-    TestGetAbsDir(fsc);
-    TestTouch(fsc);
-    TestGetContentInDir(fsc);
-    TestWriteFileFromBuf2(fsc);
-    TestDeleteFile(fsc);
-    TestGetContentInDir(fsc);
-    TestDeleteDir(fsc);
-    TestCopyFile(fsc);
-    TestGetContentInDir(fsc);*/
 
     return 0;
 }
