@@ -18,7 +18,8 @@ void TestParsePath(FSController& fsc);
 void TestGetAbsDir(FSController& fsc);
 void TestTouch(FSController& fsc);
 void TestGetContentInDir(FSController& fsc);
-void TestWriteFileFromBuf2(FSController &fsc);
-void TestDeleteFile(FSController &fsc);
+void TestWriteFileFromBuf2(FSController& fsc);
+void TestDeleteFile(FSController& fsc);
+void TestDeleteDir(FSController& fsc);
 
 #endif // TEST_H_INCLUDED

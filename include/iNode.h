@@ -25,6 +25,7 @@ struct iNode    // sizeof(iNode) = 128
     iNode()
     {
         memset(&this->bid, 0, sizeof(iNode));
+        nlink = 1;
     }
 };
 

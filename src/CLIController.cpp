@@ -292,7 +292,7 @@ bool CLIController::ReadCommand()
             strcpy(newname, srciNode.name);
 
         if(!(desiNode.mode & DIRFLAG)) return false;
-        if(!this->fsc.Copy(srciNode, desiNode, newname))
+        if(!this->fsc.Copy(srciNode, desiNode, newname, this->uid))
             return false;
     }
     if(strcmp(cmd[1], "mv") == 0)

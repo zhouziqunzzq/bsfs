@@ -279,7 +279,10 @@ void TestParsePath(FSController& fsc)
     iNode rstiNode;
     fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
     if (!fsc.ParsePath(rootiNode, path, true, &rstiNode))
+    {
         cout << "Failed to parse " << path << endl;
+        return;
+    }
     else
     {
         cout << "Parse " << path << " complete" << endl;
@@ -295,7 +298,10 @@ void TestGetAbsDir(FSController& fsc)
     iNode rstiNode;
     fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
     if (!fsc.ParsePath(rootiNode, path, true, &rstiNode))
+    {
         cout << "Failed to parse " << path << endl;
+        return;
+    }
 
     char rstPath[MAX_CMD_LEN];
     fsc.GetAbsDir(rstiNode, rstPath);
@@ -310,7 +316,10 @@ void TestTouch(FSController& fsc)
     iNode homeiNode;
     fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
     if (!fsc.ParsePath(rootiNode, path, true, &homeiNode))
+    {
         cout << "Failed to parse " << path << endl;
+        return;
+    }
 
     // Touch /home/1.txt
     char fname[] = "1.txt";
@@ -333,7 +342,10 @@ void TestGetContentInDir(FSController& fsc)
     iNode homeiNode;
     fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
     if (!fsc.ParsePath(rootiNode, path, true, &homeiNode))
+    {
         cout << "Failed to parse " << path << endl;
+        return;
+    }
 
     SFD* SFDList = new SFD[homeiNode.size / sizeof(SFD)];
     if (!fsc.GetContentInDir(homeiNode, SFDList))
@@ -350,7 +362,7 @@ void TestGetContentInDir(FSController& fsc)
     delete[] SFDList;
 }
 
-void TestWriteFileFromBuf2(FSController &fsc)
+void TestWriteFileFromBuf2(FSController& fsc)
 {
     cout << "================Test WriteFileFromBuf2=================" << endl;
     char path[MAX_CMD_LEN] = "/home/1.txt";
@@ -358,7 +370,10 @@ void TestWriteFileFromBuf2(FSController &fsc)
     iNode txtiNode;
     fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
     if (!fsc.ParsePath(rootiNode, path, true, &txtiNode))
+    {
         cout << "Failed to parse " << path << endl;
+        return;
+    }
 
     char s[1024 * 270];
     for (int i = 0; i < 1024 * 270; i++)
@@ -376,7 +391,7 @@ void TestWriteFileFromBuf2(FSController &fsc)
     }
 }
 
-void TestDeleteFile(FSController &fsc)
+void TestDeleteFile(FSController& fsc)
 {
     cout << "================Test DeleteFile=================" << endl;
     char path[MAX_CMD_LEN] = "/home/1.txt";
@@ -384,7 +399,10 @@ void TestDeleteFile(FSController &fsc)
     iNode txtiNode;
     fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
     if (!fsc.ParsePath(rootiNode, path, true, &txtiNode))
+    {
         cout << "Failed to parse " << path << endl;
+        return;
+    }
 
     if (!fsc.DeleteFile(txtiNode))
         cout << "Failed to delete " << path << endl;
@@ -392,15 +410,39 @@ void TestDeleteFile(FSController &fsc)
     {
         cout << "Delete " << path << " success" << endl;
     }
+}
 
-    /*bid_t bid;
-    if (!fsc.fbc.Distribute(&bid))
-        cout << "Failed to Distribute" << endl;
+void TestDeleteDir(FSController& fsc)
+{
+    cout << "================Test DeleteDir=================" << endl;
+    char path[MAX_CMD_LEN] = "/home";
+    iNode rootiNode;
+    iNode homeiNode;
+    fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+    if (!fsc.ParsePath(rootiNode, path, true, &homeiNode))
+    {
+        cout << "Failed to parse " << path << endl;
+        return;
+    }
+
+    if (!fsc.DeleteDir(homeiNode))
+        cout << "Failed to delete " << path << endl;
     else
     {
-        cout << "Distributed bid: " << bid << endl;
-        cout << "Expected bid: " << txtiNode.data[0] << endl;
+        cout << "Delete " << path << " success" << endl;
+        fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
+        SFD* SFDList = new SFD[rootiNode.size / sizeof(SFD)];
+        if (!fsc.GetContentInDir(rootiNode, SFDList))
+        {
+            cout << "Failed to ls /" << endl;
+        }
+        else
+        {
+            for (int i = 0; i < (int)(rootiNode.size / sizeof(SFD)); i++)
+            {
+                cout << SFDList[i].name << endl;
+            }
+        }
+        delete[] SFDList;
     }
-    if (!fsc.fbc.Recycle(bid))
-        cout << "Failed to Recycle" << endl;*/
 }
