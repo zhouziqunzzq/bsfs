@@ -6,6 +6,10 @@
 #include "VHDController.h"
 #include "FSController.h"
 
+#include "UserController.h"
+#include "PIController.h"
+#include "CLIController.h"
+
 using namespace std;
 
 int main()
@@ -15,6 +19,26 @@ int main()
 
     FSController fsc(vhdc);
     TestFSController(fsc);
+
+
+    UserController uc;
+    PIController pic;
+    iNode nowiNode;
+    if(!fsc.GetiNodeByID(ROOTDIRiNODE, &nowiNode))
+        return -1;
+    CLIController cli(fsc, uc, vhdc, pic, 0, nowiNode);
+    bool flag = false;
+    while(true)
+    {
+        if(!cli.MakeMenu())
+        {
+            cout << "Error!" << endl;
+            break;
+        }
+        cli.ReadCommand(flag);
+        if(flag) break;
+    }
+
     /*TestGLP(fsc);
     TestGetBIDByFOff(fsc);
     TestReadFileToBuf(fsc);

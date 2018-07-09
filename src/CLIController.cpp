@@ -13,23 +13,27 @@
 using namespace std;
 
 CLIController::CLIController(FSController& _fsc, UserController& _uc, VHDController& _vhdc,
-                                PIController& _pic, int _uid) :
+                                PIController& _pic, int _uid, const iNode& nowiNode) :
     fsc(_fsc), uc(_uc), vhdc(_vhdc), pic(_pic), uid(_uid)
 {
+    memcpy((char*)&this->nowiNode, (char*)&nowiNode, sizeof(iNode));
     return;
 }
 
 bool CLIController::MakeMenu()
 {
+    if(!fsc.GetiNodeByID(nowiNode.bid, &nowiNode))
+        return false;
+
     char dir[MAX_CMD_LEN];
     this->fsc.GetAbsDir(nowiNode, dir);
     char uname[MAX_UNAME_LEN];
     if(!this->uc.GetUsernameByUid(uid, uname))
         return false;
 
-    cout << "--" << uname << "@" << HOSTNAME << " ";
+    cout << "╭─" << uname << "@" << HOSTNAME << " ";
     cout << dir << endl;
-    cout << "--> ";
+    cout << "╰─> ";
     return true;
 }
 
@@ -56,6 +60,8 @@ void CLIController::GetLastSeg(char* cmd, int len, char* dirname, int &dncnt)
         if(cmd[i] == '/') break;
         dirname[dncnt++] = cmd[i];
     }
+    for(int i = 0; i <= (dncnt-1)/2; i++)
+        swap(dirname[i], dirname[dncnt-1-i]);
     dirname[dncnt] = '\0';
 }
 
@@ -69,7 +75,7 @@ bool CLIController::GetProcessID(char* cmd, int len, pid_t pid)
     return true;
 }
 
-bool CLIController::ReadCommand()
+bool CLIController::ReadCommand(bool &exitFlag)
 {
     char c, tmp[MAX_CMD_LEN];
     int lentmp = 0;
@@ -115,8 +121,6 @@ bool CLIController::ReadCommand()
             return false;
 
         int cnt = 0;
-        cout.setf(ios::left);
-        cout.width(maxWidth);
         for(int i = 0; i < subDirnum; i++)
         {
             if(len[2] == 0)
@@ -124,11 +128,14 @@ bool CLIController::ReadCommand()
                 if(strcmp(DirSet[i].name, ".") == 0) continue;
                 if(strcmp(DirSet[i].name, "..") == 0) continue;
             }
+            cout.setf(ios::left);
+            cout.width(maxWidth + LS_PADDING);
             cout << DirSet[i].name;
             cnt++;
             if(cnt % 5 == 0) cout << endl;
         }
         cout.unsetf(ios::left);
+        if(cnt % 5 != 0) cout << endl;
     }
     if(strcmp(cmd[1], "ll") == 0)
     {
@@ -143,9 +150,9 @@ bool CLIController::ReadCommand()
         {
             if(this->fsc.GetiNodeByID(DirSet[i].inode, &rst))
             {
-                for(int i = 0; i < 8; i++) moderst[i] = '-';
+                for(int j = 0; j < 8; j++) moderst[j] = '-';
                 DisplayMode(rst.mode, moderst);
-                for(int j = 0; j < 8; j++) cout << moderst[i];
+                for(int j = 0; j < 8; j++) cout << moderst[j];
                 cout << " ";
 
                 cout << rst.nlink << " ";
@@ -266,10 +273,11 @@ bool CLIController::ReadCommand()
         }
 
         iNode rst;
-        int mode;
+        int mode = 0;
         if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &rst))
             return false;
-        mode = ((cmd[2][0]-'0') << 4) | ((cmd[2][1]-'0') << 1) | (rst.mode);
+        mode = ((cmd[2][0]-'0') << 4) | ((cmd[2][1]-'0') << 1);
+        if(rst.mode & DIRFLAG) mode = mode | DIRFLAG;
         if(!this->fsc.ChangeMode(rst, (char)mode))
             return false;
     }
@@ -317,7 +325,24 @@ bool CLIController::ReadCommand()
         if(!this->fsc.Move(srciNode, desiNode, newname))
             return false;
     }
-    if(strcmp(cmd[1], "lnh") == 0)
+    if(strcmp(cmd[1], "touch") == 0)
+    {
+        if(len[3] != 0) return false;
+
+        iNode rst;
+        if(this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
+            return false;
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], false, &rst))
+            return false;
+
+        char newname[FILENAME_MAXLEN];
+        int newlen = 0;
+        GetLastSeg(cmd[2], len[2], newname, newlen);
+        iNode newrst;
+        if(!this->fsc.Touch(rst, newname, FILE_DEFAULT_FLAG, uid, &newrst))
+            return false;
+    }
+/*    if(strcmp(cmd[1], "lnh") == 0)
     {
         if(len[3] == 0) return false;
 
@@ -353,6 +378,12 @@ bool CLIController::ReadCommand()
 
         if(!this->fsc.LinkS(cmd[2], desiNode, linkname))
             return false;
+    }
+*/
+    if(strcmp(cmd[1], "exit") == 0)
+    {
+        exitFlag = true;
+        return true;
     }
 
     return true;
