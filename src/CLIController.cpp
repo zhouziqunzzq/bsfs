@@ -233,7 +233,8 @@ bool CLIController::ReadCommand(bool &exitFlag)
         char dirname[FILENAME_MAXLEN];
         int dncnt = 0;
         GetLastSeg(cmd[2], len[2], dirname, dncnt);
-        if(!fsc.CreateSubDir(rst, dirname, DIR_DEFAULT_FLAG, uid))
+        iNode trst;
+        if(!fsc.CreateSubDir(rst, dirname, DIR_DEFAULT_FLAG, uid, &trst))
             return false;
     }
     if(strcmp(cmd[1], "vim") == 0)

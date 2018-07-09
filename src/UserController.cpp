@@ -1,5 +1,6 @@
 #include<cstring>
 #include "UserController.h"
+#include "BSFSParams.h"
 
 using namespace std;
 
@@ -11,7 +12,7 @@ UserController::UserController()
 bool UserController::GetUsernameByUid(int uid, char* username)
 {
     // TODO
-    if(uid == 0)
+    if(uid == ROOT_UID)
         strcpy(username, "root");
     return true;
 }

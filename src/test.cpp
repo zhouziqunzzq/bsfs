@@ -261,7 +261,8 @@ void TestCreateSubDir(FSController& fsc)
     iNode rootiNode;
     fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode);
     char dirname[] = "home";
-    if (!fsc.CreateSubDir(rootiNode, dirname, OWNER_ALLFLAG | PUBLIC_ALLFLAG, ROOT_UID))
+    iNode rst;
+    if (!fsc.CreateSubDir(rootiNode, dirname, OWNER_ALLFLAG | PUBLIC_ALLFLAG, ROOT_UID, &rst))
         cout << "Failed to Create /home" << endl;
     else
         cout << "/home Created" << endl;

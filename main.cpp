@@ -26,7 +26,7 @@ int main()
     iNode nowiNode;
     if(!fsc.GetiNodeByID(ROOTDIRiNODE, &nowiNode))
         return -1;
-    CLIController cli(fsc, uc, vhdc, pic, 0, nowiNode);
+    CLIController cli(fsc, uc, vhdc, pic, ROOT_UID, nowiNode);
     bool flag = false;
     while(true)
     {
@@ -47,15 +47,15 @@ int main()
     TestCreateRootDir(fsc);
     TestCreateSubDir(fsc);
     TestParsePath(fsc);
-    TestGetAbsDir(fsc);*/
+    TestGetAbsDir(fsc);
     TestTouch(fsc);
     TestGetContentInDir(fsc);
     TestWriteFileFromBuf2(fsc);
-    /*TestDeleteFile(fsc);
+    TestDeleteFile(fsc);
     TestGetContentInDir(fsc);
-    TestDeleteDir(fsc);*/
+    TestDeleteDir(fsc);
     TestCopyFile(fsc);
-    TestGetContentInDir(fsc);
+    TestGetContentInDir(fsc);*/
 
     return 0;
 }

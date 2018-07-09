@@ -48,8 +48,9 @@ bool FSController::Format()
     iNode rootiNode;
     char homeName[] = "home";
     if (!this->GetiNodeByID(ROOTDIRiNODE, &rootiNode)) return false;
+    iNode homeiNode;
     if (!this->CreateSubDir(rootiNode, homeName,
-        OWNER_ALLFLAG | PUBLIC_RFLAG | PUBLIC_XFLAG, ROOT_UID))
+        OWNER_ALLFLAG | PUBLIC_RFLAG | PUBLIC_XFLAG, ROOT_UID, &homeiNode))
         return false;
 
     return true;
@@ -304,7 +305,7 @@ bool FSController::GetContentInDir(const iNode& curDir, SFD* rst)
     return true;
 }
 
-bool FSController::FindContentInDir(const SFD* DirSet, const int len, char* name, int* rst)
+bool FSController::FindContentInDir(const SFD* DirSet, const int len, const char* name, int* rst)
 {
     for(int i = 0; i < len; i++)
     {
@@ -472,7 +473,7 @@ bool FSController::Touch(iNode& curDir, char* name, char mode, int ownerUid, iNo
         return false;
     }
     // Create new iNode
-    iNode newiNode;
+    iNode newiNode;    //parent.size += sizeof(SFD);
     if (!this->ifbc.Distribute(&newiNode.bid))
     {
         delete[] dir;
@@ -500,7 +501,6 @@ bool FSController::Touch(iNode& curDir, char* name, char mode, int ownerUid, iNo
     newSFD.inode = newiNode.bid;
     if (!this->WriteFileFromBuf(curDir, curDir.size, sizeof(SFD), (char*)&newSFD))
     {
-        cout << "!!!" << endl;
         delete[] dir;
         return false;
     }
@@ -509,12 +509,11 @@ bool FSController::Touch(iNode& curDir, char* name, char mode, int ownerUid, iNo
     return true;
 }
 
-bool FSController::CreateSubDir(iNode& curDir, char* name, char mode, int ownerUid)
+bool FSController::CreateSubDir(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst)
 {
-    iNode newiNode;
-    if (!this->Touch(curDir, name, mode | DIRFLAG, ownerUid, &newiNode))
+    if (!this->Touch(curDir, name, mode | DIRFLAG, ownerUid, rst))
         return false;
-    if (!this->InitDirSFDList(newiNode, curDir.bid))
+    if (!this->InitDirSFDList(*rst, curDir.bid))
         return false;
     return this->SaveiNodeByID(curDir.bid, curDir);
 }
@@ -659,8 +658,35 @@ bool FSController::DeleteSFDEntry(const iNode& cur)
         delete[] newSFDList;
         return false;
     }
-
     delete[] newSFDList;
+    delete[] SFDList;
+    return true;
+}
+
+bool FSController::AppendSFDEntry(iNode& parent, const SFD& newSFD)
+{
+    // Only for dir
+    if (!(parent.mode & DIRFLAG)) return false;
+    // Get SFD List
+    SFD* SFDList = new SFD[parent.size / sizeof(SFD)];
+    if (!this->ReadFileToBuf(parent, 0, parent.size, (char*)SFDList))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    // Check if already exists
+    int rst = 0;
+    if (this->FindContentInDir(SFDList, parent.size / sizeof(SFD), newSFD.name, &rst))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    // Append new SFD entry
+    if (!this->WriteFileFromBuf(parent, parent.size, sizeof(SFD), (char*)&newSFD))
+    {
+        delete[] SFDList;
+        return false;
+    }
     delete[] SFDList;
     return true;
 }
@@ -714,7 +740,6 @@ bool FSController::DeleteDir(const iNode& cur)
     // so we don't need to consider that.
     for (int i = 0; i < (int)(cur.size / sizeof(SFD)); i++)
     {
-        cout << "SFDList[i].name: " << SFDList[i].name << endl;
         // Ignore . or ..
         if (strcmp(SFDList[i].name, DOT) == 0 ||
             strcmp(SFDList[i].name, DOTDOT) == 0)
@@ -773,6 +798,8 @@ bool FSController::CopyFile(const iNode& src, iNode& des, char* name, int uid)
     iNode newiNode;
     if (!this->Touch(des, name, src.mode, uid, &newiNode))
         return false;
+    // If the size of src file is 0, just touch it
+    if (src.size == 0) return true;
     // Readin src file
     char* buf = new char[src.size];
     if (!this->ReadFileToBuf(src, 0, src.size, buf))
@@ -786,17 +813,20 @@ bool FSController::CopyFile(const iNode& src, iNode& des, char* name, int uid)
         delete[] buf;
         return false;
     }
-
     delete[] buf;
     return true;
 }
 
 bool FSController::CopyDir(const iNode& src, iNode& des, char* name, int uid)
 {
+    // Only for dir
+    if (!(src.mode & DIRFLAG)) return false;
     // Create subdir
-    if (!this->CreateSubDir(des, name, src.mode, uid))
+    iNode newdiriNode;
+    if (!this->CreateSubDir(des, name, src.mode, uid, &newdiriNode))
         return false;
     // Readin SFD List
+    iNode nowiNode;
     SFD* SFDList = new SFD[src.size / sizeof(SFD)];
     if (!GetContentInDir(src, SFDList))
     {
@@ -804,8 +834,35 @@ bool FSController::CopyDir(const iNode& src, iNode& des, char* name, int uid)
         return false;
     }
     // Iterate over srcdir
-
-
+    for (int i = 0; i < (int)(src.size / sizeof(SFD)); i++)
+    {
+        // Ignore . or ..
+        if (strcmp(SFDList[i].name, DOT) == 0 || strcmp(SFDList[i].name, DOTDOT) == 0)
+            continue;
+        // Readin iNode
+        if (!this->GetiNodeByID(SFDList[i].inode, &nowiNode))
+        {
+            delete[] SFDList;
+            return false;
+        }
+        if (nowiNode.mode & DIRFLAG)    // Copy subdir recursively
+        {
+            if (!this->CopyDir(nowiNode, newdiriNode, nowiNode.name, uid))
+            {
+                delete[] SFDList;
+                return false;
+            }
+        }
+        else    // Copy regular file
+        {
+            if (!this->CopyFile(nowiNode, newdiriNode, nowiNode.name, uid))
+            {
+                delete[] SFDList;
+                return false;
+            }
+        }
+    }
+    delete[] SFDList;
     return true;
 }
 
@@ -817,9 +874,39 @@ bool FSController::Copy(const iNode& src, iNode& des, char* name, int uid)
         return this->CopyFile(src, des, name, uid);
 }
 
-bool FSController::Move(const iNode& src, iNode& des, char* name)
+bool FSController::Move(iNode& src, iNode& des, char* name)
 {
-    // TODO
+    // Delete SFD entry from old parent dir
+    if (!this->DeleteSFDEntry(src)) return false;
+    // Append new SFD entry
+    SFD newSFD;
+    strcpy(newSFD.name, name);
+    newSFD.inode = src.bid;
+    if (!this->AppendSFDEntry(des, newSFD)) return false;
+    // Update src iNode
+    strcpy(src.name, name);
+    src.parent = des.bid;
+    if (!this->SaveiNodeByID(src.bid, src)) return false;
+    // Update src SFD List
+    SFD* SFDList = new SFD[src.size / sizeof(SFD)];
+    if (!this->GetContentInDir(src, SFDList))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    int rst;
+    if (!this->FindContentInDir(SFDList, src.size / sizeof(SFD), DOTDOT, &rst))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    SFDList[rst].inode = des.bid;
+    if (!this->WriteFileFromBuf(src, 0, src.size, (char*)SFDList))
+    {
+        delete[] SFDList;
+        return false;
+    }
+    delete[] SFDList;
     return true;
 }
 

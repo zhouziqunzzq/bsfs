@@ -20,7 +20,7 @@ class FSController
         bool IsFormat();
         // General operation
         bool Copy(const iNode& src, iNode& des, char* name, int uid);
-        bool Move(const iNode& src, iNode& des, char* name);
+        bool Move(iNode& src, iNode& des, char* name);
         bool LinkH(iNode& src, iNode& des, char* name);
         bool LinkS(char* src, iNode& des, char* name);
         bool ChangeMode(iNode& cur, char mode);
@@ -38,10 +38,10 @@ class FSController
         bool DeleteFile(const iNode& cur);
         // Directory operation
         bool GetContentInDir(const iNode& curDir, SFD* rst);
-        bool FindContentInDir(const SFD* DirSet, const int len, char* name, int* rst);
+        bool FindContentInDir(const SFD* DirSet, const int len, const char* name, int* rst);
         bool InitDirSFDList(iNode& cur, bid_t parentBid);
         bool CreateRootDir();
-        bool CreateSubDir(iNode& curDir, char* name, char mode, int ownerUid);
+        bool CreateSubDir(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst);
         bool DeleteDir(const iNode& cur);
 
     protected:
@@ -54,6 +54,7 @@ class FSController
         bool DeleteIndir2Blocks(const iNode& cur);
         // SFD operation
         bool DeleteSFDEntry(const iNode& cur);
+        bool AppendSFDEntry(iNode& parent, const SFD& newSFD);
         // File operation
         bool CopyFile(const iNode& src, iNode& des, char* name, int uid);
         // Directory operation
