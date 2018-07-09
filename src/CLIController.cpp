@@ -343,7 +343,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(!this->fsc.Touch(rst, newname, FILE_DEFAULT_FLAG, uid, &newrst))
             return false;
     }
-/*    if(strcmp(cmd[1], "lnh") == 0)
+    if(strcmp(cmd[1], "lnh") == 0)
     {
         if(len[3] == 0) return false;
 
@@ -380,7 +380,6 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(!this->fsc.LinkS(cmd[2], desiNode, linkname))
             return false;
     }
-*/
     if(strcmp(cmd[1], "exit") == 0)
     {
         exitFlag = true;

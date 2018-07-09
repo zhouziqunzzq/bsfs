@@ -695,9 +695,9 @@ bool FSController::DeleteFile(const iNode& cur)
 {
     // Not for directory
     if (cur.mode & DIRFLAG) return false;
-    // Recycle data blocks if nlink == 1
+    // Recycle data blocks and iNode if nlink == 1
     // (if nlink > 1, then there're other hard links,
-    //  which means we can't recycle its data blocks yet)
+    //  which means we can't recycle its data blocks or iNode yet)
     if (cur.nlink == 1)
     {
         if (cur.blocks <= DIRECT_BLOCK_CNT)
@@ -716,11 +716,11 @@ bool FSController::DeleteFile(const iNode& cur)
                 this->DeleteIndir2Blocks(cur))
                 return false;
         }
+        // Recycle iNode block
+        if (!this->ifbc.Recycle(cur.bid)) return false;
     }
     // Delete SFD in parent
-    if (!this->DeleteSFDEntry(cur)) return false;
-    // Recycle iNode block
-    return this->ifbc.Recycle(cur.bid);
+    return this->DeleteSFDEntry(cur);
 }
 
 bool FSController::DeleteDir(const iNode& cur)
@@ -912,8 +912,14 @@ bool FSController::Move(iNode& src, iNode& des, char* name)
 
 bool FSController::LinkH(iNode& src, iNode& des, char* name)
 {
-    // TODO
-    return true;
+    // Update src iNode
+    src.nlink++;
+    if (!this->SaveiNodeByID(src.bid, src)) return false;
+    // Append new SFD in des
+    SFD newSFD;
+    strcpy(newSFD.name, name);
+    newSFD.inode = src.bid;
+    return this->AppendSFDEntry(des, newSFD);
 }
 
 bool FSController::LinkS(char* src, iNode& des, char* name)
