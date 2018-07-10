@@ -135,8 +135,8 @@ bool FSController::AppendBlocksToFile(iNode& cur, int blockCnt)
     bid_t dataBid = 0, directBid = 0, indir1Bid = 0, indir2Bid = 0;
     char indir1Buf[BLOCKSIZE], indir2Buf[BLOCKSIZE];
     bid_t indir1BufLoadBid = 0, indir2BufLoadBid = 0;
-    memset(indir1Buf, 0, sizeof(BLOCKSIZE));
-    memset(indir2Buf, 0, sizeof(BLOCKSIZE));
+    memset(indir1Buf, 0, BLOCKSIZE);
+    memset(indir2Buf, 0, BLOCKSIZE);
     // Append new blocks one by one
     for (int i = (int)cur.blocks; i < (int)cur.blocks + blockCnt; i++)
     {
