@@ -227,6 +227,25 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
+    if(strcmp(cmd[1], "kill") == 0)    // kill <pid>
+    {
+        if (len[2] == 0) return false;
+        pid_t rstPid = 0;
+        if (!GetProcessID(cmd[2], len[2], rstPid))
+        {
+            cout << INVALID_PID << endl;
+            return false;
+        }
+        if (pic.KillProcess(rstPid))
+        {
+            cout << "[" << rstPid << "] Process killed" << endl;
+        }
+        else
+        {
+            cout << INVALID_PID << endl;
+            return false;
+        }
+    }
     if(strcmp(cmd[1], "openr") == 0)    // openr <path> <pid>
     {
         if(len[3] == 0) return false;
@@ -270,16 +289,26 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(len[3] == 0) return false;
         pid_t pid = 0;
         if(!GetProcessID(cmd[3], len[3], pid))
-            return false;
-
+        {
+            cout << INVALID_PID << endl;
+        }
         iNode rst;
         if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
-            return false;
-        if(rst.mode & DIRFLAG) return false;
-        if(!this->pic.CheckXlock(rst.bid)) return false;
-
+        {
+            cout << INVALID_PATH << endl;
+        }
+        if(rst.mode & DIRFLAG)
+        {
+            cout << IS_DIR << endl;
+        }
+        if(this->pic.CheckXlock(rst.bid))
+        {
+            cout << FILE_LOCKED << endl;
+        }
         if(!this->pic.FOpen(pid, rst, true))
-            return false;
+        {
+            cout << DEFAULT_ERROR << endl;
+        }
     }
     if(strcmp(cmd[1], "mkdir") == 0)    // mkdir <path>
     {
