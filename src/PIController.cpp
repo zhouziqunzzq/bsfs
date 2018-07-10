@@ -67,7 +67,7 @@ bool PIController::AssignPid(pid_t* pid)
         if (!plist[i].valid)
         {
             *pid = p;
-            return false;
+            return true;
         }
         p++;
     }

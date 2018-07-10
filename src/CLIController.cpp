@@ -213,6 +213,20 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
         memcpy((char*)&nowiNode, (char*)&rst, sizeof(iNode));
     }
+    if(strcmp(cmd[1], "start") == 0)    // start <processname>
+    {
+        if(len[2] == 0) return false;
+        pid_t newPid;
+        if (pic.CreateProcess(cmd[2], this->uid, &newPid))
+        {
+            cout << "[" << newPid << "] Process " << cmd[2] << " started" << endl;
+        }
+        else
+        {
+            cout << DEFAULT_ERROR << "(Too many process)" << endl;
+            return false;
+        }
+    }
     if(strcmp(cmd[1], "openr") == 0)    // openr <path> <pid>
     {
         if(len[3] == 0) return false;
