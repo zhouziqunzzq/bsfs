@@ -74,6 +74,7 @@ typedef unsigned int uid_t;
 #define NOT_DIR "Not a directory"
 #define IS_DIR "Is a directory"
 #define DEFAULT_ERROR "Error"
+#define DEFAULT_SUCCESS "Success"
 #define INVALID_PID "Invalid pid"
 #define FILE_EXISTS "File already exists"
 #define FILE_LOCKED "File is locked by other process"

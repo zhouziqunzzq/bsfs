@@ -33,7 +33,7 @@ bool FSController::Format()
     for(int i = DATABLOCK_MIN; i <= DATABLOCK_MAX; i++)
         if(!fbc.Recycle(i)) return false;
     if(!fbc.SaveSuperBlock()) return false;
-    // Fomat iNode Super Block and construct GPL
+    // Format iNode Super Block and construct GPL
     ifbc.SetFullFlag();
     for(int i = iNODEBLOCK_MIN + 1; i <= iNODEBLOCK_MAX; i++)   // skip iNode of /
         if(!ifbc.Recycle(i)) return false;

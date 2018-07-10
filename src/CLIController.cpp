@@ -599,7 +599,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if(strcmp(cmd[1], "useradd") == 0)  // useradd <username> <password>
+    if(strcmp(cmd[1], "useradd") == 0)  // useradd <username> <password> (root required)
     {
         if (!uc.CheckRoot(this->uid))
         {
@@ -626,7 +626,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if (strcmp(cmd[1], "userdel") == 0) // userdel [-r] <username>
+    if (strcmp(cmd[1], "userdel") == 0) // userdel [-r] <username> (root required)
     {
         if (!uc.CheckRoot(this->uid))
         {
@@ -680,9 +680,123 @@ bool CLIController::ReadCommand(bool &exitFlag)
             }
         }
     }
+    if (strcmp(cmd[1], "passwd") == 0) // passwd <oldpwd> <newpwd>
+    {
+        if (len[2] == 0) return false;
+        if (!this->uc.CheckPwd(this->uid, cmd[2]))
+        {
+            cout << "Invalid old password" << endl;
+            return false;
+        }
+        if (!this->uc.ChangePwd(this->uid, cmd[3]))
+        {
+            cout << DEFAULT_ERROR << endl;
+            return false;
+        }
+        cout << "Password changed" << endl;
+    }
     if (strcmp(cmd[1], "su") == 0) // su
     {
         return this->Login();
+    }
+    if (strcmp(cmd[1], "format") == 0) // format (root required)
+    {
+        if (!uc.CheckRoot(this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
+        if (!fsc.Format())
+        {
+            cout << DEFAULT_ERROR << endl;
+            return false;
+        }
+        // Formatted, need restart
+        cout << "Formatted. Please restart the system" << endl;
+        exitFlag = true;
+    }
+    if (strcmp(cmd[1], "echo") == 0) // echo <path> <content>
+    {
+        if (len[2] == 0) return false;
+        iNode rst;
+        if (this->fsc.ParsePath(nowiNode, cmd[2], true, &rst, false))
+        {   // Append to existing file
+            if (rst.mode & DIRFLAG)
+            {
+                cout << IS_DIR << endl;
+                return false;
+            }
+            if (!uc.CheckW(rst, this->uid))
+            {
+                cout << ACCESS_DENIED << endl;
+                return false;
+            }
+            if (!fsc.WriteFileFromBuf(rst, rst.size, len[3], cmd[3]))
+            {
+                cout << DEFAULT_ERROR << endl;
+                return false;
+            }
+            cout << DEFAULT_SUCCESS << endl;
+        }
+        else
+        {   // Write to new file
+            if(!this->fsc.ParsePath(nowiNode, cmd[2], false, &rst, false))
+            {
+                cout << INVALID_PATH << endl;
+                return false;
+            }
+            if (!uc.CheckW(rst, this->uid))
+            {
+                cout << ACCESS_DENIED << endl;
+                return false;
+            }
+            char newname[FILENAME_MAXLEN];
+            int newlen = 0;
+            GetLastSeg(cmd[2], len[2], newname, newlen);
+            iNode newrst;
+            if(!this->fsc.Touch(rst, newname, FILE_DEFAULT_FLAG, uid, &newrst))
+            {
+                cout << DEFAULT_ERROR << endl;
+                return false;
+            }
+            if (!this->fsc.WriteFileFromBuf(newrst, 0, len[3], cmd[3]))
+            {
+                cout << DEFAULT_ERROR << endl;
+                return false;
+            }
+            cout << DEFAULT_SUCCESS << endl;
+        }
+    }
+    if (strcmp(cmd[1], "cat") == 0) // cat <path>
+    {
+        if (len[2] == 0) return false;
+        iNode rst;
+        if (!fsc.ParsePath(nowiNode, cmd[2], true, &rst, false))
+        {
+            cout << INVALID_PATH << endl;
+            return false;
+        }
+        if (rst.mode & DIRFLAG)
+        {
+            cout << IS_DIR << endl;
+            return false;
+        }
+        if (!uc.CheckR(rst, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
+        char* buf = new char[rst.size + 10];
+        if (!fsc.ReadFileToBuf(rst, 0, rst.size, buf))
+        {
+            delete[] buf;
+            cout << DEFAULT_ERROR << endl;
+            return false;
+        }
+        for (unsigned int i = 0; i < rst.size; i++)
+            cout << buf[i];
+        cout << endl;
+        delete[] buf;
     }
     if (strcmp(cmd[1], "clear") == 0) // clear
     {
