@@ -198,6 +198,7 @@ bool UserController::CheckRoot(const uid_t& uid)
 
 bool UserController::CheckR(const iNode& cur, uid_t uid)
 {
+    if (CheckRoot(uid)) return true;
     if (cur.uid == uid) //owner
         return cur.mode & OWNER_RFLAG;
     else    //public
@@ -206,6 +207,7 @@ bool UserController::CheckR(const iNode& cur, uid_t uid)
 
 bool UserController::CheckW(const iNode& cur, uid_t uid)
 {
+    if (CheckRoot(uid)) return true;
     if (cur.uid == uid) //owner
         return cur.mode & OWNER_WFLAG;
     else    //public
@@ -214,6 +216,7 @@ bool UserController::CheckW(const iNode& cur, uid_t uid)
 
 bool UserController::CheckX(const iNode& cur, uid_t uid)
 {
+    if (CheckRoot(uid)) return true;
     if (cur.uid == uid) //owner
         return cur.mode & OWNER_XFLAG;
     else    //public
