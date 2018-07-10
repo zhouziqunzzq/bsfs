@@ -195,3 +195,27 @@ bool UserController::CheckRoot(const uid_t& uid)
 {
     return uid == ROOT_UID;
 }
+
+bool UserController::CheckR(const iNode& cur, uid_t uid)
+{
+    if (cur.uid == uid) //owner
+        return cur.mode & OWNER_RFLAG;
+    else    //public
+        return cur.mode & PUBLIC_RFLAG;
+}
+
+bool UserController::CheckW(const iNode& cur, uid_t uid)
+{
+    if (cur.uid == uid) //owner
+        return cur.mode & OWNER_WFLAG;
+    else    //public
+        return cur.mode & PUBLIC_WFLAG;
+}
+
+bool UserController::CheckX(const iNode& cur, uid_t uid)
+{
+    if (cur.uid == uid) //owner
+        return cur.mode & OWNER_XFLAG;
+    else    //public
+        return cur.mode & PUBLIC_XFLAG;
+}

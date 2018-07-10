@@ -80,6 +80,7 @@ int main()
     CLIController cli(fsc, uc, vhdc, pic, ROOT_UID, rootiNode);
     // Login
     while (!cli.Login());
+    cout << CLEAR_LINUX << endl;
     // Main loop
     bool flag = false;
     while(true)

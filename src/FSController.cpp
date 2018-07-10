@@ -628,7 +628,7 @@ bool FSController::DeleteIndir2Blocks(const iNode& cur)
     return this->fbc.Recycle(cur.data[INODE_INDIR2_MAX]);
 }
 
-bool FSController::DeleteSFDEntry(const iNode& cur)
+bool FSController::DeleteSFDEntry(iNode& cur)
 {
     // Get parent iNode
     iNode piNode;
@@ -712,7 +712,7 @@ bool FSController::AppendSFDEntry(iNode& parent, const SFD& newSFD)
     return true;
 }
 
-bool FSController::DeleteFile(const iNode& cur)
+bool FSController::DeleteFile(iNode& cur)
 {
     // Not for directory
     if (cur.mode & DIRFLAG) return false;
@@ -745,7 +745,7 @@ bool FSController::DeleteFile(const iNode& cur)
     return true;
 }
 
-bool FSController::DeleteDir(const iNode& cur)
+bool FSController::DeleteDir(iNode& cur)
 {
     // Only for dir
     if (!(cur.mode & DIRFLAG)) return false;
@@ -900,6 +900,12 @@ bool FSController::Move(iNode& src, iNode& des, char* name)
 {
     // Delete SFD entry from old parent dir
     if (!this->DeleteSFDEntry(src)) return false;
+    // Reload iNode if needed
+    if (src.parent == des.bid)
+    {
+        if (!this->GetiNodeByID(des.bid, &des))
+            return false;
+    }
     // Append new SFD entry
     SFD newSFD;
     strcpy(newSFD.name, name);
@@ -909,26 +915,29 @@ bool FSController::Move(iNode& src, iNode& des, char* name)
     strcpy(src.name, name);
     src.parent = des.bid;
     if (!this->SaveiNodeByID(src.bid, src)) return false;
-    // Update src SFD List
-    SFD* SFDList = new SFD[src.size / sizeof(SFD)];
-    if (!this->GetContentInDir(src, SFDList))
+    // Update src SFD List if src is a directory
+    if (src.mode & DIRFLAG)
     {
+        SFD* SFDList = new SFD[src.size / sizeof(SFD)];
+        if (!this->GetContentInDir(src, SFDList))
+        {
+            delete[] SFDList;
+            return false;
+        }
+        int rst;
+        if (!this->FindContentInDir(SFDList, src.size / sizeof(SFD), DOTDOT, &rst))
+        {
+            delete[] SFDList;
+            return false;
+        }
+        SFDList[rst].inode = des.bid;
+        if (!this->WriteFileFromBuf(src, 0, src.size, (char*)SFDList))
+        {
+            delete[] SFDList;
+            return false;
+        }
         delete[] SFDList;
-        return false;
     }
-    int rst;
-    if (!this->FindContentInDir(SFDList, src.size / sizeof(SFD), DOTDOT, &rst))
-    {
-        delete[] SFDList;
-        return false;
-    }
-    SFDList[rst].inode = des.bid;
-    if (!this->WriteFileFromBuf(src, 0, src.size, (char*)SFDList))
-    {
-        delete[] SFDList;
-        return false;
-    }
-    delete[] SFDList;
     return true;
 }
 

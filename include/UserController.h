@@ -19,6 +19,9 @@ class UserController
         bool AddUser(const char* username, const char* password, bool createHome = true);
         bool DelUser(const uid_t& uid, bool removeHome = false);
         bool CheckRoot(const uid_t& uid);
+        bool CheckR(const iNode& cur, uid_t uid);
+        bool CheckW(const iNode& cur, uid_t uid);
+        bool CheckX(const iNode& cur, uid_t uid);
 
     protected:
 

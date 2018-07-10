@@ -36,14 +36,14 @@ class FSController
         bool ReadFileToBuf(const iNode& cur, int start, int len, char* buf);
         bool AppendBlocksToFile(iNode& cur, int blockCnt);
         bool WriteFileFromBuf(iNode& cur, int start, int len, char* buf);
-        bool DeleteFile(const iNode& cur);
+        bool DeleteFile(iNode& cur);
         // Directory operation
         bool GetContentInDir(const iNode& curDir, SFD* rst);
         bool FindContentInDir(const SFD* DirSet, const int len, const char* name, int* rst);
         bool InitDirSFDList(iNode& cur, bid_t parentBid);
         bool CreateRootDir();
         bool CreateSubDir(iNode& curDir, char* name, char mode, uid_t ownerUid, iNode* rst);
-        bool DeleteDir(const iNode& cur);
+        bool DeleteDir(iNode& cur);
 
     protected:
         //
@@ -54,7 +54,7 @@ class FSController
         bool DeleteIndir1Blocks(const iNode& cur);
         bool DeleteIndir2Blocks(const iNode& cur);
         // SFD operation
-        bool DeleteSFDEntry(const iNode& cur);
+        bool DeleteSFDEntry(iNode& cur);
         bool AppendSFDEntry(iNode& parent, const SFD& newSFD);
         // File operation
         bool CopyFile(const iNode& src, iNode& des, char* name, uid_t uid);

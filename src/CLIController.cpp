@@ -118,6 +118,11 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
     if(strcmp(cmd[1], "ls") == 0)
     {
+        if (!uc.CheckR(this->nowiNode, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
         if((len[2] != 0) && (strcmp(cmd[2], "-a") != 0))
             return false;
 
@@ -140,6 +145,11 @@ bool CLIController::ReadCommand(bool &exitFlag)
     }
     if(strcmp(cmd[1], "ll") == 0)
     {
+        if (!uc.CheckR(this->nowiNode, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
         if(len[2] != 0) return false;
 
         iNode rst;
@@ -186,8 +196,20 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
         iNode rst;
         if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
+        {
+            cout << INVALID_PATH << endl;
             return false;
-        if(!(rst.mode & DIRFLAG)) return false;
+        }
+        if(!(rst.mode & DIRFLAG))
+        {
+            cout << NOT_DIR << endl;
+            return false;
+        }
+        if (!uc.CheckR(rst, this->uid) || !uc.CheckX(rst, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
 
         memcpy((char*)&nowiNode, (char*)&rst, sizeof(iNode));
     }
@@ -229,14 +251,25 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
         iNode rst;
         if(!this->fsc.ParsePath(nowiNode, cmd[2], false, &rst))
+        {
+            cout << INVALID_PATH << endl;
             return false;
+        }
+        if (!uc.CheckW(rst, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
 
         char dirname[FILENAME_MAXLEN];
         int dncnt = 0;
         GetLastSeg(cmd[2], len[2], dirname, dncnt);
         iNode trst;
         if(!fsc.CreateSubDir(rst, dirname, DIR_DEFAULT_FLAG, uid, &trst))
+        {
+            cout << DEFAULT_ERROR << endl;
             return false;
+        }
     }
     if(strcmp(cmd[1], "vim") == 0)
     {}
@@ -249,20 +282,40 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(len[3] == 0)
         {
             if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst, false))
+            {
+                cout << INVALID_PATH << endl;
                 return false;
-            if(rst.mode & DIRFLAG) return false;
+            }
+            if(rst.mode & DIRFLAG)
+            {
+                cout << IS_DIR << endl;
+                return false;
+            }
 
             if(!this->fsc.DeleteFile(rst))
+            {
+                cout << DEFAULT_ERROR << endl;
                 return false;
+            }
         }
         else
         {
             if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &rst))
+            {
+                cout << INVALID_PATH << endl;
                 return false;
-            if(!(rst.mode & DIRFLAG)) return false;
+            }
+            if(!(rst.mode & DIRFLAG))
+            {
+                cout << NOT_DIR << endl;
+                return false;
+            }
 
             if(!this->fsc.DeleteDir(rst))
+            {
+                cout << DEFAULT_ERROR << endl;
                 return false;
+            }
         }
     }
     if(strcmp(cmd[1], "chmod") == 0)
@@ -277,11 +330,22 @@ bool CLIController::ReadCommand(bool &exitFlag)
         iNode rst;
         int mode = 0;
         if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &rst))
+        {
+            cout << INVALID_PATH << endl;
             return false;
+        }
+        if (!uc.CheckW(rst, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
         mode = ((cmd[2][0]-'0') << 4) | ((cmd[2][1]-'0') << 1);
         if(rst.mode & DIRFLAG) mode = mode | DIRFLAG;
         if(!this->fsc.ChangeMode(rst, (char)mode))
+        {
+            cout << DEFAULT_ERROR << endl;
             return false;
+        }
     }
     if(strcmp(cmd[1], "cp") == 0)
     {
@@ -289,21 +353,39 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
         iNode srciNode, desiNode;
         if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode))
+        {
+            cout << INVALID_PATH << endl;
             return false;
+        }
         char newname[FILENAME_MAXLEN];
         int newlen = 0;
         if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode, false))
         {
             if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode, false))
+            {
+                cout << INVALID_PATH << endl;
                 return false;
+            }
             GetLastSeg(cmd[3], len[3], newname, newlen);
         }
         else
             strcpy(newname, srciNode.name);
 
-        if(!(desiNode.mode & DIRFLAG)) return false;
-        if(!this->fsc.Copy(srciNode, desiNode, newname, this->uid))
+        if(!(desiNode.mode & DIRFLAG))
+        {
+            cout << NOT_DIR << endl;
             return false;
+        }
+        if (!uc.CheckR(srciNode, this->uid) || !uc.CheckW(desiNode, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
+        if(!this->fsc.Copy(srciNode, desiNode, newname, this->uid))
+        {
+            cout << DEFAULT_ERROR << endl;
+            return false;
+        }
     }
     if(strcmp(cmd[1], "mv") == 0)
     {
@@ -311,21 +393,39 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
         iNode srciNode, desiNode;
         if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode, false))
+        {
+            cout << INVALID_PATH << endl;
             return false;
+        }
         char newname[FILENAME_MAXLEN];
         int newlen = 0;
         if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode, false))
         {
             if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode, false))
+            {
+                cout << INVALID_PATH << endl;
                 return false;
+            }
             GetLastSeg(cmd[3], len[3], newname, newlen);
         }
         else
             strcpy(newname, srciNode.name);
 
-        if(!(desiNode.mode & DIRFLAG)) return false;
-        if(!this->fsc.Move(srciNode, desiNode, newname))
+        if(!(desiNode.mode & DIRFLAG))
+        {
+            cout << NOT_DIR << endl;
             return false;
+        }
+        if (!uc.CheckR(srciNode, this->uid) || !uc.CheckW(desiNode, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
+        if(!this->fsc.Move(srciNode, desiNode, newname))
+        {
+            cout << DEFAULT_ERROR << endl;
+            return false;
+        }
     }
     if(strcmp(cmd[1], "touch") == 0)
     {
@@ -333,16 +433,30 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
         iNode rst;
         if(this->fsc.ParsePath(nowiNode, cmd[2], true, &rst, false))
+        {
+            cout << FILE_EXISTS << endl;
             return false;
+        }
         if(!this->fsc.ParsePath(nowiNode, cmd[2], false, &rst, false))
+        {
+            cout << INVALID_PATH << endl;
             return false;
+        }
+        if (!uc.CheckW(rst, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
 
         char newname[FILENAME_MAXLEN];
         int newlen = 0;
         GetLastSeg(cmd[2], len[2], newname, newlen);
         iNode newrst;
         if(!this->fsc.Touch(rst, newname, FILE_DEFAULT_FLAG, uid, &newrst))
+        {
+            cout << DEFAULT_ERROR << endl;
             return false;
+        }
     }
     if(strcmp(cmd[1], "lnh") == 0)
     {
@@ -350,19 +464,34 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
         iNode srciNode, desiNode;
         if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &srciNode, false))
+        {
+            cout << INVALID_PATH << endl;
             return false;
+        }
         char linkname[FILENAME_MAXLEN];
         int linklen = 0;
         if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode))
         {
             if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode))
+            {
+                cout << INVALID_PATH << endl;
                 return false;
+            }
             GetLastSeg(cmd[3], len[3], linkname, linklen);
         }
         else strcpy(linkname, srciNode.name);
 
-        if(!this->fsc.LinkH(srciNode, desiNode, linkname))
+        if (!uc.CheckR(srciNode, this->uid) || !uc.CheckW(desiNode, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
             return false;
+        }
+
+        if(!this->fsc.LinkH(srciNode, desiNode, linkname))
+        {
+            cout << DEFAULT_ERROR << endl;
+            return false;
+        }
     }
     if(strcmp(cmd[1], "lns") == 0)
     {
@@ -374,18 +503,30 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(!this->fsc.ParsePath(nowiNode, cmd[3], true, &desiNode))
         {
             if(!this->fsc.ParsePath(nowiNode, cmd[3], false, &desiNode))
+            {
+                cout << INVALID_PATH << endl;
                 return false;
+            }
         }
         GetLastSeg(cmd[3], len[3], linkname, linklen);
 
-        if(!this->fsc.LinkS(cmd[2], desiNode, linkname, this->uid))
+        if (!uc.CheckW(desiNode, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
             return false;
+        }
+
+        if(!this->fsc.LinkS(cmd[2], desiNode, linkname, this->uid))
+        {
+            cout << DEFAULT_ERROR << endl;
+            return false;
+        }
     }
     if(strcmp(cmd[1], "useradd") == 0)  // useradd username password
     {
         if (!uc.CheckRoot(this->uid))
         {
-            cout << "Access denied" << endl;
+            cout << ACCESS_DENIED << endl;
             return false;
         }
         if(len[3] == 0) return false;
@@ -412,7 +553,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
     {
         if (!uc.CheckRoot(this->uid))
         {
-            cout << "Access denied" << endl;
+            cout << ACCESS_DENIED << endl;
             return false;
         }
         if(len[2] == 0) return false;
@@ -466,8 +607,13 @@ bool CLIController::ReadCommand(bool &exitFlag)
     {
         return this->Login();
     }
+    if (strcmp(cmd[1], "clear") == 0) // su
+    {
+        cout << CLEAR_LINUX << endl;
+    }
     if(strcmp(cmd[1], "exit") == 0)
     {
+        cout << BYE << endl;
         exitFlag = true;
         return true;
     }

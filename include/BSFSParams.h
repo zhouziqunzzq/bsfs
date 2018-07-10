@@ -69,6 +69,14 @@ typedef unsigned int uid_t;
 #define HOSTNAME "yukiyukiyu"
 #define HOMEDIR_ABSPATH "/home"
 #define NULL_UNAME "null"
+#define ACCESS_DENIED "Access denied"
+#define INVALID_PATH "Invalid path"
+#define NOT_DIR "Not a directory"
+#define IS_DIR "Is a directory"
+#define DEFAULT_ERROR "Error"
+#define FILE_EXISTS "File already exists"
+#define BYE "Bye"
+#define CLEAR_LINUX "\033[2J\033[1;1H"
 const char DOT[2] = ".";
 const char DOTDOT[3] = "..";
 
