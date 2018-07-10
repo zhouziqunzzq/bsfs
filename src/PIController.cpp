@@ -99,13 +99,22 @@ void PIController::PrintStatus()
             cout << "PID:\t" << p.pid << endl;
             cout << "PName:\t" << p.pname << endl;
             cout << "UID:\t" << p.uid << endl;
-            cout << "FileList:" << endl;
-            for (unsigned int j = 0; j < p.cnt; j++)
+            if (p.cnt == 0)
+                cout << "No file opened" << endl;
+            else
             {
-                cout << j << ". ";
-                memset(path, 0, MAX_CMD_LEN);
-                fsc.GetAbsDir(ilist[i].inode, path);
-                cout << path << endl;
+                cout << "FileList:" << endl;
+                for (unsigned int j = 0; j < p.cnt; j++)
+                {
+                    cout << j + 1 << ". ";
+                    if (ilist[p.flist[j]].xlock && ilist[p.flist[j]].xpid == p.pid)
+                        cout << "[W] ";
+                    else
+                        cout << "[R] ";
+                    memset(path, 0, MAX_CMD_LEN);
+                    fsc.GetAbsDir(ilist[p.flist[j]].inode, path);
+                    cout << path << endl;
+                }
             }
             cout << endl;
         }

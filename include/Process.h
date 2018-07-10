@@ -22,6 +22,7 @@ struct Process
         uid = 0;
         cnt = 0;
         memset(flist, 0, sizeof(flist));
+        valid = false;
     }
 
     bool OpenFile(const bid_t& bid)

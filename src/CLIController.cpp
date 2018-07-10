@@ -596,6 +596,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             cout << DEFAULT_ERROR << endl;
             return false;
         }
+        cout << "File opened" << endl;
     }
     if(strcmp(cmd[1], "openw") == 0)    // openw <path> <pid>
     {
@@ -620,8 +621,34 @@ bool CLIController::ReadCommand(bool &exitFlag)
         }
         if(!this->pic.FOpen(pid, rst, true))
         {
-            cout << DEFAULT_ERROR << endl;
+            cout << DEFAULT_ERROR << "(" << INVALID_PID << ")" << endl;
         }
+        cout << "File opened" << endl;
+    }
+    if(strcmp(cmd[1], "close") == 0)    // close <path> <pid>
+    {
+        if(len[3] == 0) return false;
+        pid_t pid = 0;
+        if(!GetProcessID(cmd[3], len[3], pid))
+        {
+            cout << INVALID_PID << endl;
+        }
+        iNode rst;
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
+        {
+            cout << INVALID_PATH << endl;
+        }
+        if(rst.mode & DIRFLAG)
+        {
+            cout << IS_DIR << endl;
+        }
+        if (!pic.FClose(pid, rst))
+        {
+            cout << DEFAULT_ERROR << "(" << INVALID_PID << " or"
+                << " File is already closed)" << endl;
+            return false;
+        }
+        cout << "File closed" << endl;
     }
     if(strcmp(cmd[1], "mkdir") == 0)    // mkdir <path>
     {
@@ -1069,7 +1096,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
     }
     if (strcmp(cmd[1], "echo") == 0) // echo <path> <content>
     {
-        if (len[2] == 0) return false;
+        if (len[2] == 0 || len[3] == 0) return false;
         iNode rst;
         if (this->fsc.ParsePath(nowiNode, cmd[2], true, &rst, false))
         {   // Append to existing file
@@ -1138,17 +1165,24 @@ bool CLIController::ReadCommand(bool &exitFlag)
             cout << ACCESS_DENIED << endl;
             return false;
         }
-        char* buf = new char[rst.size + 10];
-        if (!fsc.ReadFileToBuf(rst, 0, rst.size, buf))
+        if (rst.size != 0)
         {
+            char* buf = new char[rst.size + 10];
+            if (!fsc.ReadFileToBuf(rst, 0, rst.size, buf))
+            {
+                delete[] buf;
+                cout << DEFAULT_ERROR << endl;
+                return false;
+            }
+            for (unsigned int i = 0; i < rst.size; i++)
+                cout << buf[i];
+            cout << endl;
             delete[] buf;
-            cout << DEFAULT_ERROR << endl;
-            return false;
         }
-        for (unsigned int i = 0; i < rst.size; i++)
-            cout << buf[i];
-        cout << endl;
-        delete[] buf;
+    }
+    if (strcmp(cmd[1], "top") == 0) // top
+    {
+        this->pic.PrintStatus();
     }
     if (strcmp(cmd[1], "clear") == 0) // clear
     {
