@@ -654,13 +654,13 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(len[3] != 0) return false;
 
         iNode rst;
-        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, rst))
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
             return false;
         if(rst.mode & DIRFLAG) return false;
 
         char tmpmsg[VIM_MAX_X][VIM_MAX_Y];
         int cntX;
-        if(!this->fsc.GetCutFile(rst, tmpmsg, cntX))
+        if(!this->fsc.GetCutFile(rst, tmpmsg, &cntX))
             return false;
 
         memset(msg, 0, sizeof(msg));
@@ -679,7 +679,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(saveFlag)
         {
             iNode parent;
-            if(!fsc.ParsePath(nowiNode, cmd[2], false, parent))
+            if(!fsc.ParsePath(nowiNode, cmd[2], false, &parent))
                 return false;
             char fname[FILENAME_MAXLEN];
             int flen = 0;

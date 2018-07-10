@@ -33,10 +33,14 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
+			<Add option="-lncurses" />
 			<Add directory="include" />
+			<Add directory="/usr/include" />
 		</Compiler>
 		<Linker>
+			<Add library="/usr/lib/libncurses.so" />
 			<Add directory="include" />
+			<Add directory="/usr/lib" />
 		</Linker>
 		<Unit filename="include/BSFSParams.h" />
 		<Unit filename="include/CLIController.h" />

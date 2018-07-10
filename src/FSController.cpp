@@ -976,13 +976,14 @@ bool FSController::LinkS(char* src, iNode& des, char* name, uid_t uid)
     return true;
 }
 
-bool FSController::GetCutFile(const iNode& cur, char* rst, int* cntX)
+bool FSController::GetCutFile(const iNode& cur, char rst[VIM_MAX_X][VIM_MAX_Y], int* cntX)
 {
     // TODO
     return true;
 }
 
-bool SaveCutFile(const iNode& parent, char* name, char* buf, int cntX)
+bool FSController::SaveCutFile(const iNode& parent, char* name,
+                         char buf[VIM_MAX_X][VIM_MAX_Y], int cntX)
 {
     // TODO
     return true;
