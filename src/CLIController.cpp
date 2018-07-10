@@ -86,8 +86,9 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(c == ' ' && lentmp == 0) continue;
         tmp[lentmp++] = c;
     }
-    if(lentmp == 0)
-        if(!MakeMenu()) return false;
+    if(lentmp == 0) return true;
+    /*if(lentmp == 0)
+        if(!MakeMenu()) return false;*/
     if(tmp[lentmp-1] != ' ') tmp[lentmp++] = ' ';
 
     char cmd[5][MAX_CMD_LEN];
@@ -158,7 +159,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
                 cout << rst.nlink << " ";
 
                 if(!this->uc.GetUsernameByUid(rst.uid, uname))
-                    return false;
+                    cout << NULL_UNAME << " ";
                 else cout << uname << " ";
 
                 cout << rst.size << " ";
@@ -386,5 +387,47 @@ bool CLIController::ReadCommand(bool &exitFlag)
         return true;
     }
 
+    return true;
+}
+
+bool CLIController::Login()
+{
+    char username[MAX_UNAME_LEN];
+    char password[MAX_PWD_LEN];
+    memset(username, 0, sizeof(username));
+    memset(password, 0, sizeof(password));
+    uid_t uid;
+    cout << "Username: ";
+    cin >> username;
+    cin.ignore(100, '\n');
+    if (!uc.GetUidByUsername(username, &uid))
+    {
+        cout << "Invalid username" << endl;
+        return false;
+    }
+    else
+    {
+        cout << "Password: ";
+        cin >> password;
+        cin.ignore(100, '\n');
+        if (!uc.CheckPwd(uid, password))
+        {
+            cout << "Invalid password" << endl;
+            return false;
+        }
+    }
+    // Set now uid
+    this->uid = uid;
+    // Set now path to /home/<username>
+    char path[MAX_CMD_LEN];
+    memset(path, 0, sizeof(path));
+    strcpy(path, HOMEDIR_ABSPATH);
+    strcpy(path + strlen(HOMEDIR_ABSPATH), "/");
+    strcpy(path + strlen(HOMEDIR_ABSPATH) + 1, username);
+    iNode homeiNode, fooiNode;
+    if (fsc.ParsePath(fooiNode, path, true, &homeiNode))
+        memcpy((char*)&this->nowiNode, (char*)&homeiNode, sizeof(iNode));
+    else
+        cout << "Failed to cd " << path << ", use / instead" << endl;
     return true;
 }

@@ -14,7 +14,7 @@ struct iNode    // sizeof(iNode) = 128
     char name[FILENAME_MAXLEN]; // save filename in iNode for convinience
     char mode;  // d rwx(owner) rwx(public) softlink
     unsigned int nlink; // hard link count (default: 1)
-    unsigned short uid; // owner user ID
+    uid_t uid; // owner user ID
     unsigned int size;  // file size in bytes
     time_t atime; // access timestamp
     time_t mtime; // modify timestamp

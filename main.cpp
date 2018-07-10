@@ -74,10 +74,13 @@ int main()
     InitUser(uc);
 
     PIController pic;
-    iNode nowiNode;
-    if(!fsc.GetiNodeByID(ROOTDIRiNODE, &nowiNode))
+    iNode rootiNode;
+    if(!fsc.GetiNodeByID(ROOTDIRiNODE, &rootiNode))
         return -1;
-    CLIController cli(fsc, uc, vhdc, pic, ROOT_UID, nowiNode);
+    CLIController cli(fsc, uc, vhdc, pic, ROOT_UID, rootiNode);
+    // Login
+    while (!cli.Login());
+    // Main loop
     bool flag = false;
     while(true)
     {

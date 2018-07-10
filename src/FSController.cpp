@@ -522,12 +522,15 @@ bool FSController::Touch(iNode& curDir, char* name, char mode, int ownerUid, iNo
         delete[] dir;
         return false;
     }
+    // Update curDir iNode
+    curDir.mtime = time(nullptr);
+    if (!this->SaveiNodeByID(curDir.bid, curDir)) return false;
     // Clean up
     delete[] dir;
     return true;
 }
 
-bool FSController::CreateSubDir(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst)
+bool FSController::CreateSubDir(iNode& curDir, char* name, char mode, uid_t ownerUid, iNode* rst)
 {
     if (!this->Touch(curDir, name, mode | DIRFLAG, ownerUid, rst))
         return false;
@@ -809,7 +812,7 @@ bool FSController::ChangeMode(iNode& cur, char mode)
 }
 
 // Copy file identified by src into a dir identified by des with given name
-bool FSController::CopyFile(const iNode& src, iNode& des, char* name, int uid)
+bool FSController::CopyFile(const iNode& src, iNode& des, char* name, uid_t uid)
 {
     // Only for file
     if (src.mode & DIRFLAG) return false;
@@ -836,7 +839,7 @@ bool FSController::CopyFile(const iNode& src, iNode& des, char* name, int uid)
     return true;
 }
 
-bool FSController::CopyDir(const iNode& src, iNode& des, char* name, int uid)
+bool FSController::CopyDir(const iNode& src, iNode& des, char* name, uid_t uid)
 {
     // Only for dir
     if (!(src.mode & DIRFLAG)) return false;
@@ -885,7 +888,7 @@ bool FSController::CopyDir(const iNode& src, iNode& des, char* name, int uid)
     return true;
 }
 
-bool FSController::Copy(const iNode& src, iNode& des, char* name, int uid)
+bool FSController::Copy(const iNode& src, iNode& des, char* name, uid_t uid)
 {
     if (src.mode & DIRFLAG)
         return this->CopyDir(src, des, name, uid);
@@ -952,7 +955,7 @@ bool FSController::LinkH(iNode& src, iNode& des, char* name)    // Fake
     return true;
 }
 
-bool FSController::LinkS(char* src, iNode& des, char* name, int uid)
+bool FSController::LinkS(char* src, iNode& des, char* name, uid_t uid)
 {
     // Touch new file
     iNode newiNode;

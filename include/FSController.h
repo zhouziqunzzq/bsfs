@@ -19,10 +19,10 @@ class FSController
         bool Format();
         bool IsFormat();
         // General operation
-        bool Copy(const iNode& src, iNode& des, char* name, int uid);
+        bool Copy(const iNode& src, iNode& des, char* name, uid_t uid);
         bool Move(iNode& src, iNode& des, char* name);
         bool LinkH(iNode& src, iNode& des, char* name);
-        bool LinkS(char* src, iNode& des, char* name, int uid);
+        bool LinkS(char* src, iNode& des, char* name, uid_t uid);
         bool ChangeMode(iNode& cur, char mode);
         void GetAbsDir(const iNode& cur, char* dir);
         bool ParsePath(const iNode& curDir, char* path,
@@ -42,7 +42,7 @@ class FSController
         bool FindContentInDir(const SFD* DirSet, const int len, const char* name, int* rst);
         bool InitDirSFDList(iNode& cur, bid_t parentBid);
         bool CreateRootDir();
-        bool CreateSubDir(iNode& curDir, char* name, char mode, int ownerUid, iNode* rst);
+        bool CreateSubDir(iNode& curDir, char* name, char mode, uid_t ownerUid, iNode* rst);
         bool DeleteDir(const iNode& cur);
 
     protected:
@@ -57,9 +57,9 @@ class FSController
         bool DeleteSFDEntry(const iNode& cur);
         bool AppendSFDEntry(iNode& parent, const SFD& newSFD);
         // File operation
-        bool CopyFile(const iNode& src, iNode& des, char* name, int uid);
+        bool CopyFile(const iNode& src, iNode& des, char* name, uid_t uid);
         // Directory operation
-        bool CopyDir(const iNode& src, iNode& des, char* name, int uid);
+        bool CopyDir(const iNode& src, iNode& des, char* name, uid_t uid);
 };
 
 #endif // FSCONTROLLER_H

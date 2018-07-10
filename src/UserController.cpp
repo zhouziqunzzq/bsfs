@@ -1,7 +1,9 @@
 #include <cstring>
 #include <iostream>
+#include <string>
 #include "UserController.h"
 #include "BSFSParams.h"
+#include "iNode.h"
 
 using namespace std;
 
@@ -12,21 +14,28 @@ UserController::UserController(FSController& _fsc) : fsc(_fsc)
 
 bool UserController::DistributeUid(uid_t* uid)
 {
-    uid_t u = 1;
+    uid_t u = 0;
     for (auto i = userList.begin(); i != userList.end(); i++)
     {
+        u++;
         // Distribute first spare uid
         if (!i->valid)
         {
             *uid = u;
             return true;
         }
-        u++;
     }
-    return false;
+    u++;
+    // Not enough spare space, append file and distribute uid
+    User tu;
+    if (!fsc.WriteFileFromBuf(ufiNode, ufiNode.size, sizeof(User), (char*)&tu))
+        return false;
+    userList.push_back(tu);
+    *uid = u;
+    return true;
 }
 
-bool UserController::AddUser(const char* username, const char* password)
+bool UserController::AddUser(const char* username, const char* password, bool createHome)
 {
     User u;
     strcpy(u.username, username);
@@ -52,6 +61,17 @@ bool UserController::AddUser(const char* username, const char* password)
         // Update vector
         userList.push_back(u);
     }
+    if (createHome)    // Create /home/<username>
+    {
+        char uname[MAX_UNAME_LEN], homepath[MAX_CMD_LEN] = HOMEDIR_ABSPATH;
+        memset(uname, 0, sizeof(uname));
+        strcpy(uname, username);
+        iNode homeiNode, fooiNode, rstiNode;
+        if (!fsc.ParsePath(fooiNode, homepath, true, &homeiNode))
+            return false;
+        if (!fsc.CreateSubDir(homeiNode, uname, DIR_DEFAULT_FLAG, newUid, &rstiNode))
+            return false;
+    }
     return true;
 }
 
@@ -65,7 +85,7 @@ bool UserController::InitLoadUserFile()
     // Init if necessary
     if (this->ufiNode.size == 0)
     {
-        if (!this->AddUser(ROOT_USERNAME, ROOT_DEFAULT_PWD))
+        if (!this->AddUser(ROOT_USERNAME, ROOT_DEFAULT_PWD, true))
             return false;
         return true;
     }
@@ -142,12 +162,31 @@ bool UserController::ChangePwd(const uid_t& uid, const char* pwd)
     }
 }
 
-bool UserController::DelUser(const uid_t& uid)
+bool UserController::DelUser(const uid_t& uid, bool removeHome)
 {
+    if (uid > userList.size())
+        return false;
+
+    char homepath[MAX_CMD_LEN];
+    memset(homepath, 0, sizeof(homepath));
+    strcpy(homepath, HOMEDIR_ABSPATH);
+    strcpy(homepath + strlen(HOMEDIR_ABSPATH), "/");
+    strcpy(homepath + strlen(HOMEDIR_ABSPATH) + 1, userList[uid - 1].username);
+
     User u;
     if (!fsc.WriteFileFromBuf(this->ufiNode, (uid - 1) * sizeof(User),
         sizeof(User), (char*)&u))
         return false;
     memcpy((char*)&userList[uid - 1], (char*)&u, sizeof(User));
+
+    if (removeHome) // delete /home/<username>
+    {
+        iNode homeiNode, fooiNode;
+        if (!fsc.ParsePath(fooiNode, homepath, true, &homeiNode))
+            return false;
+        if (!fsc.DeleteDir(homeiNode))
+            return false;
+    }
+
     return true;
 }

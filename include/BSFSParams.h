@@ -67,6 +67,8 @@ typedef unsigned int uid_t;
 #define WELCOMEMSG "Booting BSFS..."
 #define MAXFOLLOWLINK 40
 #define HOSTNAME "yukiyukiyu"
+#define HOMEDIR_ABSPATH "/home"
+#define NULL_UNAME "null"
 const char DOT[2] = ".";
 const char DOTDOT[3] = "..";
 
