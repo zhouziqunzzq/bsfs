@@ -3,6 +3,8 @@
 #include<iostream>
 #include<algorithm>
 #include<ctime>
+#include<ncurses.h>
+#include<unistd.h>
 #include "CLIController.h"
 #include "BSFSParams.h"
 #include "FSController.h"
@@ -73,6 +75,317 @@ bool CLIController::GetProcessID(char* cmd, int len, pid_t& pid)
         pid = pid * 10 + cmd[i]-'0';
     }
     return true;
+}
+
+void CLIController::VimInit(int row)
+{
+    int rowmin = line[row].ymin;
+	int rowmax = line[row].ymax;
+	if(row < xmin || row > xmax)
+	{
+		rowmin = 0;
+		rowmax = VIM_MAX_Y;
+	}
+	if(rowmax < rowmin) rowmax = VIM_MAX_Y;
+	for(int i = rowmin; i <= rowmax; i++)
+		mvaddch(row, i, ' ');
+}
+
+void CLIController::VimRetkey(int ch, int& ret)
+{
+    if(ch == KEY_ESC)
+		ret = 1;
+	else if(ch == KEY_UP || ch == KEY_DOWN || ch == KEY_LEFT || ch == KEY_RIGHT)
+		ret = 2;
+	else if(ch == KEY_BAC)
+		ret = 3;
+	else ret = 4;
+}
+
+void CLIController::VimDir()
+{
+    VimInit(VIM_LOG_X);
+	if(ch == KEY_UP)
+	{
+		if(x > xmin)
+		{
+			x--;
+			y = min(y, line[x].ymax+1);
+		}
+		mvprintw(VIM_LOG_X, VIM_LOG_STY, "key up(x: %d, y: %d, msg: %d)", x, y, msg[x][y-line[x].ymin]);
+	}
+	if(ch == KEY_DOWN)
+	{
+		if(x < xmax)
+		{
+			x++;
+			y = min(y, line[x].ymax+1);
+		}
+		mvprintw(VIM_LOG_X, VIM_LOG_STY, "key up(x: %d, y: %d, msg: %d)", x, y, msg[x][y-line[x].ymin]);
+	}
+	if(ch == KEY_LEFT)
+	{
+		if(y > line[x].ymin) y--;
+		mvprintw(VIM_LOG_X, VIM_LOG_STY, "key up(x: %d, y: %d, msg: %d)", x, y, msg[x][y-line[x].ymin]);
+	}
+	if(ch == KEY_RIGHT)
+	{
+		if(y <= line[x].ymax) y++;
+		mvprintw(VIM_LOG_X, VIM_LOG_STY, "key up(x: %d, y: %d, msg: %d)", x, y, msg[x][y-line[x].ymin]);
+	}
+}
+
+void CLIController::VimBac()
+{
+    VimInit(VIM_LOG_X);
+	mvprintw(VIM_LOG_X, VIM_LOG_STY, "key backspace(x: %d, y: %d)", x, y);
+	if(x == xmin && y == line[x].ymin) return;
+
+	if(y > line[x].ymin)
+	{
+		msg[x][y-line[x].ymin-1] = 0;
+		y--;
+
+		for(int i = y-line[x].ymin; i <= line[x].ymax-line[x].ymin-1; i++)
+			msg[x][i] = msg[x][i+1];
+		msg[x][line[x].ymax-line[x].ymin] = 0;
+
+		VimInit(x);
+		line[x].ymax--;
+		for(int i = 0; i <= line[x].ymax - line[x].ymin; i++)
+			mvaddch(x, i + line[x].ymin, msg[x][i]);
+	}
+	else if(y == line[x].ymin)
+	{
+		x--;
+		y = line[x].ymax + 1;
+
+		mvprintw(VIM_LOG_X, VIM_LOG_STY, "key backspace(x: %d, y: %d, msg: %d)", x, y, msg[x][y-line[x].ymin]);
+
+		if(line[x+1].ymax >= line[x+1].ymin)
+		{
+			VimInit(VIM_LOG_X);
+			mvprintw(VIM_LOG_X, VIM_LOG_STY, "%d %d %d %d", line[x+1].ymin, line[x+1].ymax, msg[x][line[x].ymax+1], msg[x+1][0]);
+
+			for(int i = 0; i <= line[x+1].ymax - line[x+1].ymin; i++)
+			{
+				msg[x][line[x].ymax - line[x].ymin + i + 1] = msg[x + 1][i];
+//				mvaddch(x, line[x].ymax+i+1, msg[x+1][i]);
+			}
+			line[x].ymax = line[x].ymax + line[x + 1].ymax - line[ x + 1].ymin + 1;
+			msg[x][line[x].ymax + 1] = '\0';
+		}
+
+		for(int i = x + 1; i <= xmax - 1; i ++)
+		{
+			VimInit(i);
+			for(int j = 0; j <= line[i + 1].ymax - line[i + 1].ymin; j++)
+				msg[i][j] = msg[i + 1][j];
+
+			line[i].ymin = line[i + 1].ymin;
+			line[i].ymax = line[i + 1].ymax;
+			msg[i][line[i].ymax + 1]='\0';
+		}
+
+		VimInit(xmax);
+		for(int i = 0; i <= line[xmax].ymax - line[xmax].ymin; i++)
+			msg[xmax][i] = 0;
+		msg[xmax][0] = '\0';
+		line[xmax].ymin = 1;
+		line[xmax].ymax = 0;
+		xmax--;
+
+		for(int i = x; i <= xmax; i++)
+		{
+			VimInit(i);
+			for(int j = 0; j <= line[i].ymax - line[i].ymin; j++)
+				mvaddch(i, j + line[i].ymin, msg[i][j]);
+		}
+	}
+}
+
+void CLIController::VimLet()
+{
+    VimInit(VIM_LOG_X);
+	mvprintw(VIM_LOG_X, VIM_LOG_STY, "key %d, x: %d, y: %d, xmax: %d", ch, x, y, xmax);
+
+	if(ch == KEY_ENT)
+	{
+		if(xmax - xmin + 1 == VIM_MAX_X) return;
+		if(y != line[x].ymax + 1) return;
+
+		VimInit(x + 1);
+		xmax++;
+		for(int i = xmax; i >= x + 2; i--)
+		{
+			VimInit(i);
+			for(int j = 0; j <= line[i - 1].ymax - line[i - 1].ymin; j++)
+			{
+				msg[i][j] = msg[i - 1][j];
+				mvaddch(i, j + line[i].ymin, msg[i][j]);
+				line[i].ymin = line[i - 1].ymin;
+				line[i].ymax = line[i - 1].ymax;
+			}
+		}
+
+		for(int i = 0; i <= line[x + 1].ymax - line[x + 1].ymin; i++)
+			msg[x + 1][i] = 0;
+		line[x + 1].ymin = 1;
+		line[x + 1].ymax = 0;
+		x++;
+		y = line[x].ymax + 1;
+		VimInit(VIM_LOG_X);
+		mvprintw(VIM_LOG_X, VIM_LOG_STY, "x: %d, y: %d, ymax: %d, xmax: %d", x, y, line[x].ymin, line[x].ymax);
+		return;
+	}
+
+	if(y > VIM_MAX_Y) return;
+
+	if(msg[x][y - line[x].ymin] != 0)
+	{
+		for(int i = line[x].ymax - line[x].ymin; i >= y - line[x].ymin; i--)
+			msg[x][i+1] = msg[x][i];
+		msg[x][y - line[x].ymin] = 0;
+	}
+
+	msg[x][y - line[x].ymin] = ch;
+	line[x].ymax++;
+	y++;
+
+	for(int i = 0; i <= line[x].ymax - line[x].ymin; i++)
+	{
+		if(msg[x][i] == 0) continue;
+		mvaddch(x, i + line[x].ymin, msg[x][i]);
+	}
+}
+
+bool CLIController::VimEditor(bool saveFlag)
+{
+    initscr();
+	raw();
+	noecho();
+	keypad(stdscr, TRUE);
+
+	mvprintw(VIM_START_X - 2, VIM_LOG_STY, "test.cpp+");
+	for(int i = 0; i < VIM_MAX_Y; i++)
+	{
+		mvaddch(0, i, '-');
+		mvaddch(VIM_START_X - 1, i, '-');
+		mvaddch(VIM_LOG_X - 1, i, '-');
+	}
+	for(int i = VIM_START_X - 1; i <= VIM_LOG_X - 1; i++)
+		mvaddch(i, 0, '|');
+	mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> test.cpp");
+
+	x = xmax;
+	y = line[x].ymax + 1;
+	bool flag = 0;
+	int ret;
+
+	bool exit = 0;
+
+	while(true)
+	{
+		ret = 0;
+		ch = getch();
+		VimRetkey(ch, ret);
+		VimInit(VIM_LOG_X);
+		mvprintw(VIM_LOG_X, VIM_LOG_STY, "key %d, ret = %d", ch, ret);
+		if(ch == KEY_F(2))
+			break;
+		else if(ch == ':')
+		{
+			char save[10] = {0};
+			int sp = 0;
+			save[sp++] = ch;
+			save[sp] = '\0';
+			mvaddch(VIM_LOG_X, VIM_ESC_DIS, ch);
+			while(true)
+			{
+				ch = getch();
+				if(ch == KEY_ESC) break;
+
+				if(ch != 'w' && ch != 'q' && ch != '!' && ch != '\n')
+					continue;
+				if(sp > 4) continue;
+
+				if(ch == '\n' && strcmp(save, ":w") == 0)
+				{
+					move(x, y);
+					saveFlag = 1;
+					break;
+				}
+				if(ch == '\n' && strcmp(save, ":wq") == 0)
+				{
+					exit = 1;
+					saveFlag = 1;
+					break;
+				}
+				if(ch == '\n' && strcmp(save, ":q!") == 0)
+				{
+					exit = 1;
+					break;
+				}
+
+				save[sp++] = ch;
+				save[sp] = '\0';
+				for(int i = 0; i < sp; i++)
+					mvaddch(VIM_LOG_X, VIM_ESC_DIS + i, save[i]);
+			}
+			if(exit == 1) break;
+		}
+		else if(ch == 'i')  //insert mode
+		{
+			flag = 1;
+			mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "I... >> test.cpp[+]");
+			VimInit(VIM_LOG_X);
+			mvprintw(VIM_LOG_X, VIM_LOG_STY, "key insert(x: %d, y: %d)", x, y);
+			move(x, y);
+
+			while(flag)
+			{
+				ret = 0;
+				ch = getch();
+				VimRetkey(ch, ret);
+
+				VimInit(VIM_LOG_X);
+				mvprintw(VIM_LOG_X, VIM_LOG_STY, "key %d, ret = %d", ch, ret);
+				move(x, y);
+
+				if(ret == 1)
+				{
+					flag = 0;
+					VimInit(VIM_LOG_X + 1);
+					mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> test.cpp");
+					VimInit(VIM_LOG_X);
+					mvprintw(VIM_LOG_X, VIM_LOG_STY, "key escape");
+					move(x, y);
+				}
+				if(ret == 2) VimDir();
+				if(ret == 3) VimBac();
+				if(ret == 4) VimLet();
+
+				move(x, y);
+			}
+		}
+		else if(ch == 27) //esc mode
+		{
+			flag = 0;
+			VimInit(VIM_LOG_X + 1);
+			mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> test.cpp");
+			VimInit(VIM_LOG_X);
+			mvprintw(VIM_LOG_X, VIM_LOG_STY, "key escape");
+			move(x, y);
+		}
+		else if(ret == 2)
+		{
+			VimDir();
+			move(x, y);
+		}
+	}
+
+	endwin();
+	return 0;
 }
 
 bool CLIController::ReadCommand(bool &exitFlag)
@@ -336,8 +649,47 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if(strcmp(cmd[1], "vim") == 0)
-    {}
+    if(strcmp(cmd[1], "vim") == 0)  // vim <path>
+    {
+        if(len[3] != 0) return false;
+
+        iNode rst;
+        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, rst))
+            return false;
+        if(rst.mode & DIRFLAG) return false;
+
+        char tmpmsg[VIM_MAX_X][VIM_MAX_Y];
+        int cntX;
+        if(!this->fsc.GetCutFile(rst, tmpmsg, cntX))
+            return false;
+
+        memset(msg, 0, sizeof(msg));
+        xmin = VIM_START_X;
+        xmax = xmin + cntX - 1;
+        memset(line, 0, sizeof(0));
+        for(int i = 0; i < cntX; i++)
+        {
+            strcpy(msg[i + xmin], tmpmsg[i]);
+            line[i + xmin].ymin = 1;
+            line[i + xmin].ymax = strlen(msg[i + xmin]);
+        }
+
+        bool saveFlag = 0;
+        VimEditor(saveFlag);
+        if(saveFlag)
+        {
+            iNode parent;
+            if(!fsc.ParsePath(nowiNode, cmd[2], false, parent))
+                return false;
+            char fname[FILENAME_MAXLEN];
+            int flen = 0;
+            GetLastSeg(cmd[2], len[2], fname, flen);
+
+            cntX = xmax - xmin + 1;
+            if(!fsc.SaveCutFile(parent, fname, msg, cntX))
+                return false;
+        }
+    }
     if(strcmp(cmd[1], "rm") == 0)   // rm [-r] <path>
     {
         if(len[2] == 0) return false;
