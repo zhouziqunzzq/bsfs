@@ -185,7 +185,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         }
         cout << "total " << totSize << endl;
     }
-    if(strcmp(cmd[1], "cd") == 0)
+    if(strcmp(cmd[1], "cd") == 0)   // cd <path>
     {
         if(len[2] == 0)
         {
@@ -245,7 +245,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(!this->pic.FOpen(pid, rst, true))
             return false;
     }
-    if(strcmp(cmd[1], "mkdir") == 0)
+    if(strcmp(cmd[1], "mkdir") == 0)    //
     {
         if(len[2] == 0 || len[3] != 0) return false;
 
@@ -292,6 +292,12 @@ bool CLIController::ReadCommand(bool &exitFlag)
                 return false;
             }
 
+            if (!uc.CheckW(rst, this->uid))
+            {
+                cout << ACCESS_DENIED << endl;
+                return false;
+            }
+
             if(!this->fsc.DeleteFile(rst))
             {
                 cout << DEFAULT_ERROR << endl;
@@ -308,6 +314,12 @@ bool CLIController::ReadCommand(bool &exitFlag)
             if(!(rst.mode & DIRFLAG))
             {
                 cout << NOT_DIR << endl;
+                return false;
+            }
+
+            if (!uc.CheckW(rst, this->uid))
+            {
+                cout << ACCESS_DENIED << endl;
                 return false;
             }
 
