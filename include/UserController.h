@@ -18,6 +18,7 @@ class UserController
         bool ChangePwd(const uid_t& uid, const char* pwd);
         bool AddUser(const char* username, const char* password, bool createHome = true);
         bool DelUser(const uid_t& uid, bool removeHome = false);
+        bool CheckRoot(const uid_t& uid);
 
     protected:
 

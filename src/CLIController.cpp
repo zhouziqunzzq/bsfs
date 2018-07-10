@@ -381,6 +381,91 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(!this->fsc.LinkS(cmd[2], desiNode, linkname, this->uid))
             return false;
     }
+    if(strcmp(cmd[1], "useradd") == 0)  // useradd username password
+    {
+        if (!uc.CheckRoot(this->uid))
+        {
+            cout << "Access denied" << endl;
+            return false;
+        }
+        if(len[3] == 0) return false;
+        // Check if user exists
+        uid_t tu;
+        if (uc.GetUidByUsername(cmd[2], &tu))
+        {
+            cout << "User " << cmd[2] << " already exists" << endl;
+            return false;
+        }
+        // Add user
+        if (uc.AddUser(cmd[2], cmd[3], true))
+        {
+            cout << "User " << cmd[2] << " added" << endl;
+            return true;
+        }
+        else
+        {
+            cout << "Failed to add user " << cmd[2] << endl;
+            return false;
+        }
+    }
+    if (strcmp(cmd[1], "userdel") == 0) // userdel [-r] <username>
+    {
+        if (!uc.CheckRoot(this->uid))
+        {
+            cout << "Access denied" << endl;
+            return false;
+        }
+        if(len[2] == 0) return false;
+        if((len[3] != 0) && (strcmp(cmd[2], "-r") != 0)) return false;
+        if (strcmp(cmd[2], "-r") == 0)  // userdel -r <username>
+        {
+            uid_t tu;
+            if (uc.GetUidByUsername(cmd[3], &tu))
+            {
+                if (uc.DelUser(tu, true))
+                {
+                    cout << "User " << cmd[3] << " deleted" << endl;
+                    return true;
+                }
+                else
+                {
+                    cout << "Failed to delete user " << cmd[3] << endl;
+                    return false;
+                }
+            }
+            else
+            {
+                cout << "User " << cmd[3] << " not exists" << endl;
+                return false;
+            }
+        }
+        else    // userdel <username>
+        {
+            uid_t tu;
+            if (uc.GetUidByUsername(cmd[2], &tu))
+            {
+                if (uc.DelUser(tu, false))
+                {
+                    cout << "User " << cmd[2] << " deleted" << endl;
+                    return true;
+                }
+                else
+                {
+                    cout << "Failed to delete user " << cmd[2] << endl;
+                    return false;
+                }
+            }
+            else
+            {
+                cout << "User " << cmd[2] << " not exists" << endl;
+                return false;
+            }
+        }
+    }
+    if (strcmp(cmd[1], "su") == 0) // su
+    {
+        return this->Login();
+    }
     if(strcmp(cmd[1], "exit") == 0)
     {
         exitFlag = true;

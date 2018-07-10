@@ -190,3 +190,8 @@ bool UserController::DelUser(const uid_t& uid, bool removeHome)
 
     return true;
 }
+
+bool UserController::CheckRoot(const uid_t& uid)
+{
+    return uid == ROOT_UID;
+}
