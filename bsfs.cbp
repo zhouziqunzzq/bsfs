@@ -46,6 +46,7 @@
 		<Unit filename="include/CLIController.h" />
 		<Unit filename="include/FBController.h" />
 		<Unit filename="include/FSController.h" />
+		<Unit filename="include/Line.h" />
 		<Unit filename="include/MBR.h" />
 		<Unit filename="include/PIController.h" />
 		<Unit filename="include/Process.h" />

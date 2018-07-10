@@ -978,13 +978,55 @@ bool FSController::LinkS(char* src, iNode& des, char* name, uid_t uid)
 
 bool FSController::GetCutFile(const iNode& cur, char rst[VIM_MAX_X][VIM_MAX_Y], int* cntX)
 {
-    // TODO
+    char* buf = new char[cur.size];
+    // Readin file
+    if (!this->ReadFileToBuf(cur, 0, cur.size, buf))
+    {
+        delete[] buf;
+        return false;
+    }
+    // Cut buf in lines
+    int line = 0, row = 0;
+    for (unsigned int i = 0; i < cur.size; i++)
+    {
+        if (buf[i] == '\n') // new line
+        {
+            row = 0;
+            line++;
+        }
+        else    // copy
+        {
+            rst[line][row++] = buf[i];
+        }
+    }
+    *cntX = line + 1;
+
+    delete[] buf;
     return true;
 }
 
-bool FSController::SaveCutFile(const iNode& parent, char* name,
-                         char buf[VIM_MAX_X][VIM_MAX_Y], int cntX)
+bool FSController::SaveCutFile(iNode& cur, char msg[VIM_MAX_X][VIM_MAX_Y],
+                               const int& xmax, const Line line[VIM_MAX_X])
 {
-    // TODO
+    // Create buf
+    char buf[VIM_MAX_X * VIM_MAX_Y];
+    memset(buf, 0, sizeof(buf));
+    int newsize = 0;
+    for (int i = VIM_START_X; i <= xmax; i++)
+    {
+        for (int j = line[i].ymin; j <= line[i].ymax; j++)
+        {
+            buf[newsize++] = msg[i][j - 1];
+        }
+        buf[newsize++] = '\n';
+    }
+    newsize--;
+    // Write to file
+    if (!this->WriteFileFromBuf(cur, 0, newsize, buf))
+        return false;
+    // Update iNode
+    cur.size = newsize;
+    if (!this->SaveiNodeByID(cur.bid, cur))
+        return false;
     return true;
 }

@@ -5,6 +5,7 @@
 #include "FBController.h"
 #include "iNode.h"
 #include "SFD.h"
+#include "Line.h"
 
 using namespace std;
 
@@ -42,8 +43,8 @@ class FSController
         // SaveCutFile save a char array buf[cntX][VIM_MAX_Y] into parent dir with
         // given name
         bool GetCutFile(const iNode& cur, char rst[VIM_MAX_X][VIM_MAX_Y], int* cntX);
-        bool SaveCutFile(const iNode& parent, char* name,
-                         char buf[VIM_MAX_X][VIM_MAX_Y], int cntX);
+        bool SaveCutFile(iNode& cur, char msg[VIM_MAX_X][VIM_MAX_Y],
+                               const int& xmax, const Line line[VIM_MAX_X]);
         // Directory operation
         bool GetContentInDir(const iNode& curDir, SFD* rst);
         bool FindContentInDir(const SFD* DirSet, const int len, const char* name, int* rst);

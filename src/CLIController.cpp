@@ -259,14 +259,15 @@ void CLIController::VimLet()
 	}
 }
 
-bool CLIController::VimEditor(bool saveFlag)
+bool CLIController::VimEditor(bool& saveFlag, char* fname)
 {
     initscr();
+    clear();
 	raw();
 	noecho();
 	keypad(stdscr, TRUE);
 
-	mvprintw(VIM_START_X - 2, VIM_LOG_STY, "test.cpp+");
+	mvprintw(VIM_START_X - 2, VIM_LOG_STY, "%s+", fname);
 	for(int i = 0; i < VIM_MAX_Y; i++)
 	{
 		mvaddch(0, i, '-');
@@ -275,7 +276,15 @@ bool CLIController::VimEditor(bool saveFlag)
 	}
 	for(int i = VIM_START_X - 1; i <= VIM_LOG_X - 1; i++)
 		mvaddch(i, 0, '|');
-	mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> test.cpp");
+	mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> %s", fname);
+    // Show file content
+	for (int i = VIM_START_X; i <= xmax; i++)
+    {
+        for (int j = line[i].ymin; j < line[i].ymax; j++)
+        {
+            mvaddch(i, j, msg[i][j - 1]);
+        }
+    }
 
 	x = xmax;
 	y = line[x].ymax + 1;
@@ -337,7 +346,7 @@ bool CLIController::VimEditor(bool saveFlag)
 		else if(ch == 'i')  //insert mode
 		{
 			flag = 1;
-			mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "I... >> test.cpp[+]");
+			mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "I... >> %s[+]", fname);
 			VimInit(VIM_LOG_X);
 			mvprintw(VIM_LOG_X, VIM_LOG_STY, "key insert(x: %d, y: %d)", x, y);
 			move(x, y);
@@ -356,7 +365,7 @@ bool CLIController::VimEditor(bool saveFlag)
 				{
 					flag = 0;
 					VimInit(VIM_LOG_X + 1);
-					mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> test.cpp");
+					mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> %s", fname);
 					VimInit(VIM_LOG_X);
 					mvprintw(VIM_LOG_X, VIM_LOG_STY, "key escape");
 					move(x, y);
@@ -372,7 +381,7 @@ bool CLIController::VimEditor(bool saveFlag)
 		{
 			flag = 0;
 			VimInit(VIM_LOG_X + 1);
-			mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> test.cpp");
+			mvprintw(VIM_LOG_X + 1, VIM_LOG_STY, "N... >> %s", fname);
 			VimInit(VIM_LOG_X);
 			mvprintw(VIM_LOG_X, VIM_LOG_STY, "key escape");
 			move(x, y);
@@ -678,43 +687,98 @@ bool CLIController::ReadCommand(bool &exitFlag)
     }
     if(strcmp(cmd[1], "vim") == 0)  // vim <path>
     {
-        if(len[3] != 0) return false;
-
-        iNode rst;
-        if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
+        if (len[3] != 0) return false;
+        // Parse path
+        iNode rst, parent;
+        bool needTouch = false;
+        if (!fsc.ParsePath(nowiNode, cmd[2], false, &parent))
+        {
+            cout << INVALID_PATH << endl;
             return false;
-        if(rst.mode & DIRFLAG) return false;
+        }
+        if (!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
+        {
+            needTouch = true;
+        }
+        else
+        {
+            if(rst.mode & DIRFLAG)
+            {
+                cout << IS_DIR << endl;
+                return false;
+            }
+        }
+
+        char fname[FILENAME_MAXLEN];
+        int flen = 0;
+        GetLastSeg(cmd[2], len[2], fname, flen);
 
         char tmpmsg[VIM_MAX_X][VIM_MAX_Y];
-        int cntX;
-        if(!this->fsc.GetCutFile(rst, tmpmsg, &cntX))
-            return false;
-
+        memset(tmpmsg, 0, sizeof(tmpmsg));
         memset(msg, 0, sizeof(msg));
-        xmin = VIM_START_X;
-        xmax = xmin + cntX - 1;
         memset(line, 0, sizeof(0));
+
+        int cntX = 0;
+        if (!needTouch) // open existing file
+        {
+            if (!uc.CheckR(rst, this->uid))
+            {
+                cout << ACCESS_DENIED << endl;
+                return false;
+            }
+            if(!this->fsc.GetCutFile(rst, tmpmsg, &cntX))
+            {
+                cout << DEFAULT_ERROR << endl;
+                return false;
+            }
+        }
+        // Init vim params
+        xmin = VIM_START_X;
+        xmax = (xmin + cntX - 1 < xmin) ? xmin : xmin + cntX - 1;
+        if (cntX == 0)
+        {
+            line[xmin].ymin = 1;
+            line[xmin].ymax = 1;
+        }
         for(int i = 0; i < cntX; i++)
         {
             strcpy(msg[i + xmin], tmpmsg[i]);
             line[i + xmin].ymin = 1;
-            line[i + xmin].ymax = strlen(msg[i + xmin]);
+            line[i + xmin].ymax = 1 + strlen(msg[i + xmin]);
         }
 
-        bool saveFlag = 0;
-        VimEditor(saveFlag);
+        bool saveFlag = false;
+        VimEditor(saveFlag, fname);
+
         if(saveFlag)
         {
-            iNode parent;
-            if(!fsc.ParsePath(nowiNode, cmd[2], false, &parent))
-                return false;
-            char fname[FILENAME_MAXLEN];
-            int flen = 0;
-            GetLastSeg(cmd[2], len[2], fname, flen);
+            if (needTouch)
+            {
+                if (!uc.CheckW(parent, this->uid))
+                {
+                    cout << ACCESS_DENIED << endl;
+                    return false;
+                }
+                if (!fsc.Touch(parent, fname, FILE_DEFAULT_FLAG, this->uid, &rst))
+                {
+                    cout << "Failed to write " << fname << endl;
+                    return false;
+                }
+            }
+            else
+            {
+                if (!uc.CheckW(rst, this->uid))
+                {
+                    cout << ACCESS_DENIED << endl;
+                    return false;
+                }
+            }
 
-            cntX = xmax - xmin + 1;
-            if(!fsc.SaveCutFile(parent, fname, msg, cntX))
+            if(!fsc.SaveCutFile(rst, msg, xmax, line))
+            {
+                cout << "Failed to write " << fname << endl;
                 return false;
+            }
         }
     }
     if(strcmp(cmd[1], "rm") == 0)   // rm [-r] <path>
@@ -1224,6 +1288,8 @@ bool CLIController::Login()
             return false;
         }
     }
+    // Clear
+    cout << CLEAR_LINUX;
     // Set now uid
     this->uid = uid;
     // Set now path to /home/<username>

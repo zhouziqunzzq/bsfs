@@ -8,6 +8,7 @@
 #include "FSController.h"
 #include "VHDController.h"
 #include "PIController.h"
+#include "Line.h"
 
 using namespace std;
 
@@ -28,7 +29,7 @@ class CLIController
         void VimDir();
         void VimBac();
         void VimLet();
-        bool VimEditor(bool saveFlag);
+        bool VimEditor(bool& saveFlag, char* fname);
 
     protected:
 
@@ -46,10 +47,6 @@ class CLIController
         int x, y;
         int ch;
         int xmin, xmax;
-        struct Line
-        {
-            int ymin, ymax;
-        };
         Line line[VIM_MAX_X];
 };
 
