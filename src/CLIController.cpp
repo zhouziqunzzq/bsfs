@@ -621,7 +621,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
     }
     if (strcmp(cmd[1], "clear") == 0) // su
     {
-        cout << CLEAR_LINUX << endl;
+        cout << CLEAR_LINUX;
     }
     if(strcmp(cmd[1], "exit") == 0)
     {
