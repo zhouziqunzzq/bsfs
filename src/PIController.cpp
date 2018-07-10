@@ -3,7 +3,7 @@
 #include<string>
 #include "PIController.h"
 
-PIController::PIController()
+PIController::PIController(FSController& _fsc) : fsc(_fsc)
 {
     return;
 }
@@ -59,6 +59,18 @@ bool PIController::FOpen(const pid_t pid, const iNode& i, bool xlock)
     return plist[pid].OpenFile(i.bid) && ilist[i.bid].OpenByProcess(pid, xlock);
 }
 
+bool PIController::FClose(const pid_t pid, const iNode& i)
+{
+    // Check pid
+    if (!plist[pid].valid) return false;
+    // Check iNode
+    if(!ilist[i.bid].valid) return false;
+    // Update process and inodemem
+    plist[pid].CloseFile(i.bid);
+    ilist[i.bid].CloseByProcess(pid);
+    return true;
+}
+
 bool PIController::AssignPid(pid_t* pid)
 {
     pid_t p = 0;
@@ -72,4 +84,32 @@ bool PIController::AssignPid(pid_t* pid)
         p++;
     }
     return false;
+}
+
+void PIController::PrintStatus()
+{
+    bool hasProcess = false;
+    char path[MAX_CMD_LEN];
+    for (int i = 0; i < MAX_PROCESS_CNT; i++)
+    {
+        if (plist[i].valid)
+        {
+            hasProcess = true;
+            const Process& p = plist[i];
+            cout << "PID:\t" << p.pid << endl;
+            cout << "PName:\t" << p.pname << endl;
+            cout << "UID:\t" << p.uid << endl;
+            cout << "FileList:" << endl;
+            for (unsigned int j = 0; j < p.cnt; j++)
+            {
+                cout << j << ". ";
+                memset(path, 0, MAX_CMD_LEN);
+                fsc.GetAbsDir(ilist[i].inode, path);
+                cout << path << endl;
+            }
+            cout << endl;
+        }
+    }
+    if (!hasProcess)
+        cout << "No active process" << endl;
 }
