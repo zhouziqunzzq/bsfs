@@ -23,6 +23,13 @@ class CLIController
         bool GetProcessID(char* cmd, int len, pid_t& pid);
         bool Login();
 
+        void VimInit(int row);
+        void VimRetkey(int ch, int& ret);
+        void VimDir();
+        void VimBac();
+        void VimLet();
+        bool VimEditor(bool saveFlag);
+
     protected:
 
     private:
@@ -34,6 +41,16 @@ class CLIController
         iNode nowiNode;
         char month[12][5]={"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
             "Aug", "Sep", "Oct", "Nov", "Dec"};
+        // vim params
+        char msg[VIM_MAX_X][VIM_MAX_Y];
+        int x, y;
+        int ch;
+        int xmin, xmax;
+        struct Line
+        {
+            int ymin, ymax;
+        };
+        Line line[VIM_MAX_X];
 };
 
 #endif // CLICONTROLLER_H

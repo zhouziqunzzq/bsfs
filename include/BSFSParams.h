@@ -59,6 +59,16 @@ typedef unsigned int uid_t;
 // CLI
 #define MAX_CMD_LEN 1024
 #define LS_PADDING 5
+#define VIM_MAX_Y 60
+#define VIM_MAX_X 13
+#define VIM_START_X 3
+#define VIM_END_X 15
+#define VIM_LOG_X 17
+#define VIM_LOG_STY 2
+#define VIM_ESC_DIS 40
+#define KEY_ESC 27
+#define KEY_BAC 127
+#define KEY_ENT 10
 // Process
 #define MAX_OPEN_CNT_P 128
 #define MAX_OPEN_CNT_F 128
