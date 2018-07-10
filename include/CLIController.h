@@ -20,7 +20,7 @@ class CLIController
         bool ReadCommand(bool &exitFlag);
         void DisplayMode(const char mode, char* rst);
         void GetLastSeg(char* cmd, int len, char* dirname, int &dncnt);
-        bool GetProcessID(char* cmd, int len, pid_t pid);
+        bool GetProcessID(char* cmd, int len, pid_t& pid);
         bool Login();
 
     protected:

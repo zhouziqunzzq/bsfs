@@ -65,11 +65,11 @@ void CLIController::GetLastSeg(char* cmd, int len, char* dirname, int &dncnt)
     dirname[dncnt] = '\0';
 }
 
-bool CLIController::GetProcessID(char* cmd, int len, pid_t pid)
+bool CLIController::GetProcessID(char* cmd, int len, pid_t& pid)
 {
     for(int i = 0; i < len; i++)
     {
-        if(cmd[i] < '0' && cmd[i] > '9') return false;
+        if(cmd[i] < '0' || cmd[i] > '9') return false;
         pid = pid * 10 + cmd[i]-'0';
     }
     return true;
@@ -116,7 +116,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
     for(int i = 0; i < subDirnum; i++)
         maxWidth = max(maxWidth, (int)strlen(DirSet[i].name));
 
-    if(strcmp(cmd[1], "ls") == 0)
+    if(strcmp(cmd[1], "ls") == 0)   // ls
     {
         if (!uc.CheckR(this->nowiNode, this->uid))
         {
@@ -143,7 +143,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         cout.unsetf(ios::left);
         if(cnt % 5 != 0) cout << endl;
     }
-    if(strcmp(cmd[1], "ll") == 0)
+    if(strcmp(cmd[1], "ll") == 0)   // ll
     {
         if (!uc.CheckR(this->nowiNode, this->uid))
         {
@@ -213,23 +213,45 @@ bool CLIController::ReadCommand(bool &exitFlag)
 
         memcpy((char*)&nowiNode, (char*)&rst, sizeof(iNode));
     }
-    if(strcmp(cmd[1], "openr") == 0)
+    if(strcmp(cmd[1], "openr") == 0)    // openr <path> <pid>
     {
         if(len[3] == 0) return false;
         pid_t pid = 0;
-        if(!GetProcessID(cmd[3], len[3], pid))
+        if(!GetProcessID(cmd[3], len[3], pid) || pid >= MAX_PROCESS_CNT)
+        {
+            cout << INVALID_PID << endl;
             return false;
+        }
 
         iNode rst;
         if(!this->fsc.ParsePath(nowiNode, cmd[2], true, &rst))
+        {
+            cout << INVALID_PATH << endl;
             return false;
-        if(rst.mode & DIRFLAG) return false;
-        if(!this->pic.CheckXlock(rst.bid)) return false;
+        }
+        if (!uc.CheckR(rst, this->uid))
+        {
+            cout << ACCESS_DENIED << endl;
+            return false;
+        }
+        if(rst.mode & DIRFLAG)
+        {
+            cout << IS_DIR << endl;
+            return false;
+        }
+        if(this->pic.CheckXlock(rst.bid))
+        {
+            cout << FILE_LOCKED << endl;
+            return false;
+        }
 
         if(!this->pic.FOpen(pid, rst, false))
+        {
+            cout << DEFAULT_ERROR << endl;
             return false;
+        }
     }
-    if(strcmp(cmd[1], "openw") == 0)
+    if(strcmp(cmd[1], "openw") == 0)    // openw <path> <pid>
     {
         if(len[3] == 0) return false;
         pid_t pid = 0;
@@ -245,7 +267,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
         if(!this->pic.FOpen(pid, rst, true))
             return false;
     }
-    if(strcmp(cmd[1], "mkdir") == 0)    //
+    if(strcmp(cmd[1], "mkdir") == 0)    // mkdir <path>
     {
         if(len[2] == 0 || len[3] != 0) return false;
 
@@ -273,7 +295,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
     }
     if(strcmp(cmd[1], "vim") == 0)
     {}
-    if(strcmp(cmd[1], "rm") == 0)
+    if(strcmp(cmd[1], "rm") == 0)   // rm [-r] <path>
     {
         if(len[2] == 0) return false;
         if((len[3] != 0) && (strcmp(cmd[2], "-r") != 0)) return false;
@@ -330,7 +352,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             }
         }
     }
-    if(strcmp(cmd[1], "chmod") == 0)
+    if(strcmp(cmd[1], "chmod") == 0)    // chmod <mode> <path>
     {
         if(len[3] == 0) return false;
         if(len[2] != 2) return false;
@@ -359,7 +381,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if(strcmp(cmd[1], "cp") == 0)
+    if(strcmp(cmd[1], "cp") == 0)   // cp <src> <des>
     {
         if(len[3] == 0) return false;
 
@@ -399,7 +421,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if(strcmp(cmd[1], "mv") == 0)
+    if(strcmp(cmd[1], "mv") == 0)   // mv <src> <des>
     {
         if(len[3] == 0) return false;
 
@@ -439,7 +461,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if(strcmp(cmd[1], "touch") == 0)
+    if(strcmp(cmd[1], "touch") == 0)    // touch <path>
     {
         if(len[3] != 0) return false;
 
@@ -470,7 +492,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if(strcmp(cmd[1], "lnh") == 0)
+    if(strcmp(cmd[1], "lnh") == 0)  // lnh <srcfile> <des>
     {
         if(len[3] == 0) return false;
 
@@ -505,7 +527,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if(strcmp(cmd[1], "lns") == 0)
+    if(strcmp(cmd[1], "lns") == 0)  // lns <src> <des>
     {
         if(len[3] == 0) return false;
 
@@ -534,7 +556,7 @@ bool CLIController::ReadCommand(bool &exitFlag)
             return false;
         }
     }
-    if(strcmp(cmd[1], "useradd") == 0)  // useradd username password
+    if(strcmp(cmd[1], "useradd") == 0)  // useradd <username> <password>
     {
         if (!uc.CheckRoot(this->uid))
         {
@@ -619,11 +641,11 @@ bool CLIController::ReadCommand(bool &exitFlag)
     {
         return this->Login();
     }
-    if (strcmp(cmd[1], "clear") == 0) // su
+    if (strcmp(cmd[1], "clear") == 0) // clear
     {
         cout << CLEAR_LINUX;
     }
-    if(strcmp(cmd[1], "exit") == 0)
+    if(strcmp(cmd[1], "exit") == 0) // exit
     {
         cout << BYE << endl;
         exitFlag = true;

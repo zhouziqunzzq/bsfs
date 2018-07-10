@@ -10,8 +10,9 @@ class PIController
     public:
         PIController();
         bool CheckXlock(const bid_t bid);
-        bool CreateProcess(string pname, pid_t* pid);
-        bool CreateiNodeMem(const iNode& i);
+        bool CreateProcess(string pname, uid_t uid, pid_t* pid);
+        bool KillProcess(const pid_t& pid);
+        void CreateiNodeMem(const iNode& i);
         bool FOpen(const pid_t pid, const iNode& i, bool xlock);
 
     protected:
@@ -19,7 +20,7 @@ class PIController
     private:
         iNodeMem ilist[MAX_INODE_CNT];
         Process plist[MAX_PROCESS_CNT];
-        pid_t pidp = 0;
+        bool AssignPid(pid_t* pid);
 };
 
 #endif // PICONTROLLER_H

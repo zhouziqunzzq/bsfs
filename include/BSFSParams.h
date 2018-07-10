@@ -74,7 +74,9 @@ typedef unsigned int uid_t;
 #define NOT_DIR "Not a directory"
 #define IS_DIR "Is a directory"
 #define DEFAULT_ERROR "Error"
+#define INVALID_PID "Invalid pid"
 #define FILE_EXISTS "File already exists"
+#define FILE_LOCKED "File is locked by other process"
 #define BYE "Bye"
 #define CLEAR_LINUX "\033[2J\033[1;1H"
 const char DOT[2] = ".";
