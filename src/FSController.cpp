@@ -975,3 +975,15 @@ bool FSController::LinkS(char* src, iNode& des, char* name, uid_t uid)
         return false;
     return true;
 }
+
+bool FSController::GetCutFile(const iNode& cur, char* rst, int* cntX)
+{
+    // TODO
+    return true;
+}
+
+bool SaveCutFile(const iNode& parent, char* name, char* buf, int cntX)
+{
+    // TODO
+    return true;
+}

@@ -37,6 +37,12 @@ class FSController
         bool AppendBlocksToFile(iNode& cur, int blockCnt);
         bool WriteFileFromBuf(iNode& cur, int start, int len, char* buf);
         bool DeleteFile(iNode& cur);
+        // GetCutFile and SaveCutFile is for vim
+        // GetCutFile returns cntX(how many lines) and a char array rst[cntX][VIM_MAX_Y]
+        // SaveCutFile save a char array buf[cntX][VIM_MAX_Y] into parent dir with
+        // given name
+        bool GetCutFile(const iNode& cur, char* rst, int* cntX);
+        bool SaveCutFile(const iNode& parent, char* name, char* buf, int cntX);
         // Directory operation
         bool GetContentInDir(const iNode& curDir, SFD* rst);
         bool FindContentInDir(const SFD* DirSet, const int len, const char* name, int* rst);
